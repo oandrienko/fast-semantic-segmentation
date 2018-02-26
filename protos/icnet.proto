@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package fast_semantic_segmentation.protos;
+import "protos/hyperparams.proto";
+import "protos/losses.proto";
+
+message ICNet {
+    optional int32 num_classes = 1;
+    optional ICNetFeatureExtractor feature_extractor = 2;
+    optional float filter_scale = 3;
+    optional Hyperparams hyperparams = 4;
+    optional Loss loss = 5;
+}
+
+message ICNetFeatureExtractor {
+    optional string type = 1;
+}

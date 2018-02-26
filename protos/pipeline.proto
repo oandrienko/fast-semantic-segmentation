@@ -1,0 +1,16 @@
+syntax = "proto2";
+
+package fast_semantic_segmentation.protos;
+
+import "protos/eval.proto";
+import "protos/input_reader.proto";
+import "protos/model.proto";
+import "protos/train.proto";
+
+message PipelineConfig {
+    optional FastSegmentationModel model = 1;
+    optional TrainConfig train_config = 2;
+    optional InputReader train_input_reader = 3;
+    optional EvalConfig eval_config = 4;
+    optional InputReader eval_input_reader = 5;
+}

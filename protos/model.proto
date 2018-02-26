@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package fast_semantic_segmentation.protos;
+import "protos/icnet.proto";
+
+message FastSegmentationModel {
+    oneof model {
+        ICNet icnet = 1;
+    }
+}

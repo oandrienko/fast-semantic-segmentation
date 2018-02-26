@@ -1,0 +1,25 @@
+syntax = "proto2";
+
+package fast_semantic_segmentation.protos;
+
+import "protos/optimizer.proto";
+import "protos/preprocessor.proto";
+
+message TrainConfig {
+    optional uint32 batch_size = 1 [default=32];
+    repeated PreprocessingStep preprocessor_options = 2;
+    optional uint32 keep_checkpoint_every_n_hours = 3 [default=1000];
+    optional Optimizer optimizer = 4;
+    optional string fine_tune_checkpoint = 5 [default=""];
+    // Type of checkpoint to restore variables from, e.g. 'classification' or
+    // 'segmentation'. Typically used to load feature extractor
+    // variables from trained models.
+    optional string fine_tune_checkpoint_type = 6 [default=""];
+    optional uint32 num_steps = 7 [default=0]; // If 0, then train forever.
+    optional int32 batch_queue_capacity = 8 [default=150];
+    optional int32 num_batch_queue_threads = 9 [default=8];
+    optional int32 prefetch_queue_capacity = 10 [default=5];
+    optional bool add_regularization_loss = 11 [default=true];
+    optional int32 quantize_with_delay = 12;
+    optional int32 num_queue_threads = 13 [default=8];
+}

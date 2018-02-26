@@ -1,0 +1,17 @@
+syntax = "proto2";
+
+package fast_semantic_segmentation.protos;
+
+message InputReader {
+    optional bool shuffle = 1 [default=true];
+    optional uint32 queue_capacity = 2 [default=2000];
+    optional uint32 min_after_dequeue = 3 [default=1000];
+    optional uint32 num_epochs = 4 [default=0];
+    optional uint32 num_readers = 5 [default=32];
+    optional TFRecordInputReader tf_record_input_reader = 6;
+    optional uint32 num_examples = 7;
+}
+
+message TFRecordInputReader {
+    repeated string input_path = 1;
+}

@@ -1,0 +1,56 @@
+syntax = "proto2";
+
+package fast_semantic_segmentation.protos;
+
+message PreprocessingStep {
+    oneof preprocessing_step {
+        AspectRatioImageResize aspect_ratio_image_resize = 1;
+        RandomImageScale random_image_scale = 2;
+        RandomCropImage random_image_crop = 3;
+        RandomHorizontalFlip random_horizontal_flip = 4;
+        RandomVerticalFlip random_vertical_flip = 5;
+        RandomRotation random_rotation = 6;
+    }
+}
+
+enum ResizeType {
+    BILINEAR = 0;
+    NEAREST_NEIGHBOR = 1;
+    BICUBIC = 2;
+}
+
+message AspectRatioImageResize {
+    optional int32 fixed_input_height = 1;
+    optional int32 fixed_input_width = 2;
+    // Desired size of the smaller image dimension in pixels.
+    optional int32 min_dimension = 3 [default = 600];
+    // Desired size of the larger image dimension in pixels.
+    optional int32 max_dimension = 4 [default = 1024];
+    // Desired method when resizing image.
+    optional ResizeType resize_method = 5 [default = BILINEAR];
+    // Whether to pad the image with zeros so the output spatial size is
+    // [max_dimension, max_dimension]. Note that the zeros are padded to the
+    // bottom and the right of the resized image.
+    optional bool pad_to_max_dimension = 6 [default = false];
+}
+
+message RandomImageScale {
+    optional float min_scale_ratio = 1 [default=0.5];
+    optional float max_scale_ratio = 2 [default=2.0];
+}
+
+message RandomCropImage {
+    optional float min_aspect_ratio = 1 [default=0.75];
+    optional float max_aspect_ratio = 2 [default=1.33];
+    optional float min_area = 3 [default=0.1];
+    optional float max_area = 4 [default=1.0];
+}
+
+message RandomHorizontalFlip {}
+
+message RandomVerticalFlip {}
+
+message RandomRotation {
+    optional float max_left_angle = 1 [default=20];
+    optional float max_right_angle = 2 [default=20];
+}

@@ -1,0 +1,58 @@
+syntax = "proto2";
+
+package fast_semantic_segmentation.protos;
+
+message Hyperparams {
+    optional Regularizer regularizer = 1;
+    optional Initializer initializer = 2;
+    optional BatchNorm batch_norm = 3;
+}
+
+message Regularizer {
+    oneof regularizer_oneof {
+        L1Regularizer l1_regularizer = 1;
+        L2Regularizer l2_regularizer = 2;
+    }
+}
+
+message L1Regularizer {
+    optional float weight = 1 [default = 1.0];
+}
+
+// Note that weight decay can be equivalent by setting the L2 lambda factor
+// to the weight decay factor divited by 2.
+message L2Regularizer {
+    optional float weight = 1 [default = 1.0];
+}
+
+message Initializer {
+    oneof initializer_oneof {
+        TruncatedNormalInitializer truncated_normal_initializer = 1;
+        VarianceScalingInitializer variance_scaling_initializer = 2;
+    }
+}
+
+message TruncatedNormalInitializer {
+    optional float mean = 1 [default = 0.0];
+    optional float stddev = 2 [default = 1.0];
+}
+
+// He initializatin
+message VarianceScalingInitializer {
+    optional float factor = 1 [default = 2.0];
+    optional bool uniform = 2 [default = false];
+    enum Mode {
+        FAN_IN = 0;
+        FAN_OUT = 1;
+        FAN_AVG = 2;
+    }
+    optional Mode mode = 3 [default = FAN_IN];
+}
+
+message BatchNorm {
+    optional float decay = 1 [default = 0.999];
+    optional bool center = 2 [default = true];
+    optional bool scale = 3 [default = false];
+    optional float epsilon = 4 [default = 0.001];
+    optional bool train = 5 [default = true];
+}

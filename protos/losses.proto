@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package fast_semantic_segmentation.protos;
+
+message Loss {
+    optional ClassificationLoss classification_loss = 1;
+    optional bool use_aux_loss = 2 [default=false];
+    optional float main_loss_weight = 3;
+    optional float second_branch_loss_weight = 4;
+    optional float first_branch_loss_weight = 5;
+    optional ClassificationLoss adversarial_loss = 6;
+    optional float classification_weight = 7 [default=1.0];
+    optional float discriminator_weight = 8 [default=0.0];
+    optional uint32 ignore_label = 9 [default=255];
+}
+
+message ClassificationLoss {
+    oneof loss_type {
+        SoftmaxClassificationLoss softmax = 1;
+    }
+}
+
+message SoftmaxClassificationLoss {}
