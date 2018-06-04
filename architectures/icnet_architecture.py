@@ -124,32 +124,33 @@ class ICNetArchitecture(model.FastSegmentationModel):
                                 size=(input_h, input_w))
             branch_merge = tf.add_n([input_features, full_pool,
                                      half_pool, third_pool, quarter_pool])
-        output = slim.conv2d(branch_merge, 256, [1, 1], stride=1,
+        output = slim.conv2d(branch_merge, 512//self._filter_scale, [1, 1], stride=1,
                                  normalizer_fn=slim.batch_norm,
                                  scope='Conv_1x1')
         return output
 
     def _third_feature_branch(self, preprocessed_inputs):
-        net = slim.conv2d(preprocessed_inputs, 32, [3,3], stride=2,
-             normalizer_fn=slim.batch_norm)
-        net = slim.conv2d(net, 32, [3,3], stride=2,
-             normalizer_fn=slim.batch_norm)
-        net = slim.conv2d(net, 64, [3,3], stride=2,
-             normalizer_fn=slim.batch_norm)
-        output = slim.conv2d(net, 128, [3,3], stride=1,
-             normalizer_fn=slim.batch_norm)
+        net = slim.conv2d(preprocessed_inputs, 64//self._filter_scale, [3,3],
+                stride=2, normalizer_fn=slim.batch_norm)
+        net = slim.conv2d(net, 64//self._filter_scale, [3,3],
+                stride=2, normalizer_fn=slim.batch_norm)
+        net = slim.conv2d(net, 128//self._filter_scale, [3,3],
+                stride=2, normalizer_fn=slim.batch_norm)
+        output = slim.conv2d(net, 256//self._filter_scale, [3,3],
+                stride=1, normalizer_fn=slim.batch_norm)
         return output
 
     def _cascade_feature_fusion(self, first_feature_map,
                                 second_feature_map, scope):
         with tf.variable_scope(scope):
             upsampled_inputs = self._dynamic_interpolation(first_feature_map, z_factor=2)
-            dilated_conv = slim.conv2d(upsampled_inputs, 128, [3, 3],
-                                       stride=1, rate=2,
+            dilated_conv = slim.conv2d(upsampled_inputs, 256//self._filter_scale,
+                                      [3, 3], stride=1, rate=2,
                                        normalizer_fn=slim.batch_norm,
                                        activation_fn=None,
                                        scope="DilatedConv")
-            conv = slim.conv2d(second_feature_map, 128, [1, 1], stride=1,
+            conv = slim.conv2d(second_feature_map, 256//self._filter_scale,
+                               [1, 1], stride=1,
                                normalizer_fn=slim.batch_norm,
                                activation_fn=None,
                                scope="Conv")

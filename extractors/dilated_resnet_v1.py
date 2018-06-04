@@ -144,6 +144,7 @@ def resnet_v1_downsample_block(scope, factor):
 
 
 def dilated_resnet_v1_50(inputs,
+                         filter_scale=1.0,
                          num_classes=None,
                          is_training=True,
                          global_pool=True,
@@ -158,11 +159,17 @@ def dilated_resnet_v1_50(inputs,
   """
 
   blocks = [
-    resnet_v1_block('block1', base_depth=64, num_units=3, stride=2),
+    resnet_v1_block('block1', base_depth=64//filter_scale,
+                    num_units=3, stride=2),
+
     resnet_v1_downsample_block('downsample_block', factor=2),
-    resnet_v1_block('block2', base_depth=128, num_units=4, stride=2),
-    resnet_v1_block('block3', base_depth=256, num_units=6, stride=2, rate=2),
-    resnet_v1_block('block4', base_depth=512, num_units=3, stride=1, rate=4),
+
+    resnet_v1_block('block2', base_depth=128//filter_scale,
+                    num_units=4, stride=2),
+    resnet_v1_block('block3', base_depth=256//filter_scale,
+                    num_units=6, stride=2, rate=2),
+    resnet_v1_block('block4', base_depth=512//filter_scale,
+                    num_units=3, stride=1, rate=4),
   ]
   return resnet_v1.resnet_v1(inputs, blocks, num_classes, is_training,
                    global_pool=global_pool, output_stride=output_stride,

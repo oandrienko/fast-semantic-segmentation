@@ -18,12 +18,14 @@ class ICNetResnetV1FeatureExtractor(icnet_architecture.ICNetFeatureExtractor):
                  architecture,
                  resnet_model,
                  is_training,
+                 filter_scale,
                  features_stride,
                  batch_norm_trainable=False,
                  reuse_weights=None,
                  weight_decay=0.0):
         if features_stride != 8:
             raise ValueError('`features_stride` must be 8 for ICNet,')
+        self._filter_scale = filter_scale
         self._architecture = architecture
         self._resnet_model = resnet_model
         super(ICNetResnetV1FeatureExtractor, self).__init__(
@@ -45,6 +47,7 @@ class ICNetResnetV1FeatureExtractor(icnet_architecture.ICNetFeatureExtractor):
                 weight_decay=self._weight_decay)):
             _, activations = self._resnet_model(
                     preprocessed_inputs,
+                    filter_scale=self._filter_scale,
                     num_classes=None,
                     is_training=self._train_batch_norm,
                     global_pool=False,
@@ -64,11 +67,12 @@ class ICNetDilatedResnet50FeatureExtractor(ICNetResnetV1FeatureExtractor):
 
     def __init__(self,
                  is_training,
+                 filter_scale=1.0,
                  features_stride=8,
                  batch_norm_trainable=False,
                  reuse_weights=None,
                  weight_decay=0.0):
         super(ICNetDilatedResnet50FeatureExtractor, self).__init__(
             'resnet_v1_50', dilated_resnet_v1.dilated_resnet_v1_50, is_training,
-            features_stride, batch_norm_trainable,
+            filter_scale, features_stride, batch_norm_trainable,
             reuse_weights, weight_decay)

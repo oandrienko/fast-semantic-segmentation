@@ -120,7 +120,6 @@ def create_training_model_losses(input_queue, create_model_fn, train_config):
     segmentation_model.provide_groundtruth(labels)
     prediction_dict = segmentation_model.predict(images)
 
-    # output graph.pbtxt
     # with tf.Session() as sess:
     #     train_writer = tf.summary.FileWriter('./tmp')
     #     train_writer.add_graph(sess.graph)
@@ -205,7 +204,8 @@ def train_segmentation_model(create_model_fn,
               optimizer_summary_vars) = optimizer_builder.build(
                 train_config.optimizer)
             for var in optimizer_summary_vars:
-                tf.summary.scalar(var.op.name, var, family='LearningRate')
+                summaries.add(
+                    tf.summary.scalar(var.op.name, var, family='LearningRate'))
 
         # Add summaries for model variables.
         for model_var in slim.get_model_variables():

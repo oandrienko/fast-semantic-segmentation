@@ -13,7 +13,7 @@ ICNET_FEATURE_EXTRACTER = {
 
 
 def _build_icnet_extractor(
-        feature_extractor_config, is_training, reuse_weights=None):
+        feature_extractor_config, filter_scale, is_training, reuse_weights=None):
     feature_type = feature_extractor_config.type
 
     if feature_type not in ICNET_FEATURE_EXTRACTER:
@@ -22,7 +22,8 @@ def _build_icnet_extractor(
 
     feature_extractor_class = ICNET_FEATURE_EXTRACTER[
         feature_type]
-    return feature_extractor_class(is_training, reuse_weights=reuse_weights)
+    return feature_extractor_class(is_training,
+        filter_scale=filter_scale, reuse_weights=reuse_weights)
 
 
 def _build_icnet_model(icnet_config, is_training, add_summaries):
@@ -30,12 +31,12 @@ def _build_icnet_model(icnet_config, is_training, add_summaries):
     if not num_classes:
         raise ValueError('"num_classes" must be greater than 0.')
 
-    feature_extractor = _build_icnet_extractor(
-      icnet_config.feature_extractor, is_training)
-
     filter_scale = icnet_config.filter_scale
     if filter_scale > 1 or filter_scale < 0:
         raise ValueError('"filter_scale" must be in the range (0,1].')
+
+    feature_extractor = _build_icnet_extractor(
+      icnet_config.feature_extractor, filter_scale, is_training)
 
     model_arg_scope = hyperparams_builder.build(
         icnet_config.hyperparams, is_training)
