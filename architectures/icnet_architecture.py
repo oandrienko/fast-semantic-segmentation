@@ -106,26 +106,30 @@ class ICNetArchitecture(model.FastSegmentationModel):
             full_pool = slim.avg_pool2d(input_features, [input_h, input_w],
                                 stride=(input_h, input_w))
             full_pool = tf.image.resize_bilinear(full_pool,
-                                size=(input_h, input_w))
+                                size=(input_h, input_w),
+                                align_corners=True)
             half_pool = slim.avg_pool2d(input_features,
                                         [input_h//2, input_w//2],
                                 stride=(input_h//2, input_w//2))
             half_pool = tf.image.resize_bilinear(half_pool,
-                                size=(input_h, input_w))
+                                size=(input_h, input_w),
+                                align_corners=True)
             third_pool = slim.avg_pool2d(input_features,
                                         [input_h//3, input_w//3],
                                 stride=(input_h//3, input_w//3))
             third_pool = tf.image.resize_bilinear(third_pool,
-                                size=(input_h, input_w))
+                                size=(input_h, input_w),
+                                align_corners=True)
             quarter_pool = slim.avg_pool2d(input_features,
                                         [input_h//4, input_w//4],
                                 stride=(input_h//4, input_w//4))
             quarter_pool = tf.image.resize_bilinear(quarter_pool,
-                                size=(input_h, input_w))
+                                size=(input_h, input_w),
+                                align_corners=True)
             branch_merge = tf.add_n([input_features, full_pool,
                                      half_pool, third_pool, quarter_pool])
-        output = slim.conv2d(branch_merge, 512//self._filter_scale, [1, 1], stride=1,
-                                 normalizer_fn=slim.batch_norm,
+        output = slim.conv2d(branch_merge, 512//self._filter_scale, [1, 1],
+                                 stride=1, normalizer_fn=slim.batch_norm,
                                  scope='Conv_1x1')
         return output
 
@@ -167,7 +171,8 @@ class ICNetArchitecture(model.FastSegmentationModel):
             _, input_h, input_w, _ = features_to_upsample.shape
             new_shape = (int(input_h*z_factor/s_factor),
                          int(input_w*z_factor/s_factor))
-            return tf.image.resize_bilinear(features_to_upsample, new_shape)
+            return tf.image.resize_bilinear(features_to_upsample, new_shape,
+                align_corners=True)
 
     def loss(self, prediction_dict, scope=None):
         losses_dict = {}

@@ -5,18 +5,11 @@ package fast_semantic_segmentation.protos;
 message EvalConfig {
     optional uint32 num_visualizations = 1 [default=10];
     optional uint32 num_examples = 2 [default=5000];
-    // How often to run evaluation.
-    optional uint32 eval_interval_secs = 3 [default=300];
-    // Maximum number of times to run evaluation. If set to 0, will run forever.
-    optional uint32 max_evals = 4 [default=0];
-    // Whether the TensorFlow graph used for evaluation should be saved to disk.
-    optional bool save_graph = 5 [default=false];
-    // Path to directory to store visualizations in. If empty, visualization
-    // images are not exported (only shown on Tensorboard).
+    optional uint32 ignore_label = 3 [default=255];
+    optional uint32 eval_interval_secs = 4 [default=300];
+    optional uint32 max_evals = 5 [default=0];
     optional string visualization_export_dir = 6 [default=""];
-    // Whether to show groundtruth
-    optional bool visualize_groundtruth = 13 [default=false];
-    // Whether to keep image identifier in filename when exported to
-    // visualization_export_dir.
-    optional bool keep_image_id_for_visualization_export = 15 [default=false];
+    optional bool visualize_groundtruth = 7 [default=false];
+    optional uint32 fixed_input_height = 8 [default=1024];
+    optional uint32 fixed_input_width = 9 [default=2048];
 }

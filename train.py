@@ -63,6 +63,7 @@ flags.mark_flag_as_required('logdir')
 flags.DEFINE_integer('save_every_n_hours', 999,
                      'Time between successive saves of a checkpoint')
 
+
 def create_training_input(create_input_fn,
                           preprocess_fn,
                           batch_size,
@@ -96,7 +97,7 @@ def create_training_input(create_input_fn,
 
 def create_training_model_losses(input_queue, create_model_fn, train_config):
 
-    segmentation_model = create_model_fn()
+    _, segmentation_model = create_model_fn()
 
     # Optional quantization
     if train_config.quantize_with_delay:
@@ -145,7 +146,7 @@ def train_segmentation_model(create_model_fn,
                              num_replicas,
                              save_every_n_hours):
     """Create an instance of the FastSegmentationModel"""
-    segmentation_model = create_model_fn()
+    _, segmentation_model = create_model_fn()
     deploy_config = model_deploy.DeploymentConfig(
         num_clones=num_clones,
         clone_on_cpu=clone_on_cpu,

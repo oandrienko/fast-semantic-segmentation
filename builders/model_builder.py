@@ -64,7 +64,7 @@ def _build_icnet_model(icnet_config, is_training, add_summaries):
         common_kwargs[
             'first_branch_loss_weight'] = loss_config.first_branch_loss_weight
 
-    return icnet_architecture.ICNetArchitecture(
+    return num_classes, icnet_architecture.ICNetArchitecture(
         filter_scale=filter_scale,
         **common_kwargs)
 
