@@ -128,10 +128,10 @@ class ICNetArchitecture(model.FastSegmentationModel):
                                 align_corners=True)
             branch_merge = tf.add_n([input_features, full_pool,
                                      half_pool, third_pool, quarter_pool])
-        output = slim.conv2d(branch_merge, 512//self._filter_scale, [1, 1],
+            output = slim.conv2d(branch_merge, 512//self._filter_scale, [1, 1],
                                  stride=1, normalizer_fn=slim.batch_norm,
-                                 scope='Conv_1x1')
-        return output
+                                 scope='Conv1x1')
+            return output
 
     def _third_feature_branch(self, preprocessed_inputs):
         net = slim.conv2d(preprocessed_inputs, 64//self._filter_scale, [3,3],

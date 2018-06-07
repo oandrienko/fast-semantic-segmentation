@@ -1,3 +1,4 @@
+import os
 import functools
 import tensorflow as tf
 
@@ -76,7 +77,8 @@ def build(input_reader_config):
         raise ValueError('input_reader_config must have '
                              '`tf_record_input_reader`.')
 
-    if not reader_config.input_path:
+    if not reader_config.input_path or \
+            not os.path.isfile(reader_config.input_path[0]):
         raise ValueError('At least one input path must be specified in '
                          '`input_reader_config`.')
 

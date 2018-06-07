@@ -116,7 +116,7 @@ def create_training_model_losses(input_queue, create_model_fn, train_config):
     for image in images:
         resized_image = segmentation_model.preprocess(image)
         preprocessed_images.append(resized_image)
-    images = tf.concat(preprocessed_images, 0)
+    images = tf.concat(preprocessed_images, 0, name="Inputs")
 
     segmentation_model.provide_groundtruth(labels)
     prediction_dict = segmentation_model.predict(images)
@@ -232,6 +232,11 @@ def train_segmentation_model(create_model_fn,
             with tf.control_dependencies([update_op]):
                 train_op = tf.identity(total_loss, name='train_op')
 
+        graph = tf.get_default_graph()
+        summary_image = graph.get_tensor_by_name('Inputs:0')
+        summaries.add(
+          tf.summary.image('VerifyTrainImage/Inputs', summary_image))
+
         # Add the summaries from the first clone. These contain the summaries
         # created by model_fn and either optimize_clones() or _gather_clone_loss().
         summaries |= set(
@@ -266,6 +271,8 @@ def train_segmentation_model(create_model_fn,
                 ignore_missing_vars=True)
         else:
             tf.logging.info('Not initializing the model from a checkpoint.')
+
+        tf.local_variables_initializer()
 
         # Main training loop
         slim.learning.train(

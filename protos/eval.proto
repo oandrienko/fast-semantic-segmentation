@@ -10,6 +10,6 @@ message EvalConfig {
     optional uint32 max_evals = 5 [default=0];
     optional string visualization_export_dir = 6 [default=""];
     optional bool visualize_groundtruth = 7 [default=false];
-    optional uint32 fixed_input_height = 8 [default=1024];
-    optional uint32 fixed_input_width = 9 [default=2048];
+    optional uint32 fixed_height = 8 [default=1025];
+    optional uint32 fixed_width = 9 [default=2049];
 }

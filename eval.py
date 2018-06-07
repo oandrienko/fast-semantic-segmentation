@@ -101,8 +101,8 @@ def main(_):
     predictions, labels, inputs = create_predictions_and_labels(
         model=segmentation_model,
         create_input_dict_fn=create_input_fn,
-        input_height=eval_config.fixed_input_height,
-        input_width=eval_config.fixed_input_width)
+        input_height=eval_config.fixed_height,
+        input_width=eval_config.fixed_width)
 
     # Gather variables from training
     variables_to_restore = tf.global_variables()
