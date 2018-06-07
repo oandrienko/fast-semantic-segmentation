@@ -4,8 +4,7 @@ from protos import losses_pb2
 
 
 def _softmax_classification_loss(predictions, labels, ignore_label):
-
-    flattened_labels = tf.reshape(tf.cast(labels, tf.uint8), shape=[-1])
+    flattened_labels = tf.reshape(labels, shape=[-1])
     num_classes = predictions.get_shape().as_list()[-1]
     predictions = tf.reshape(predictions, [-1, num_classes])
 

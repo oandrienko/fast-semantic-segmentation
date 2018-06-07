@@ -192,31 +192,7 @@ def random_crop(images, labels,
                 preprocess_vars_cache=None):
 
     def _apply_random_crop(inputs, offsets, crop_shape):
-
-        def my_func1(x):
-            print("inputs.shape: ", x.shape)
-            return x
-        inputs = tf.py_func(my_func1, [inputs], tf.float32)
-
-        def my_func2(x):
-            print("offsets: ", x)
-            print("offsets.shape: ", x.shape)
-            return x
-        offsets = tf.py_func(my_func2, [offsets], tf.int32)
-
-        def my_func3(x):
-            print("crop_shape: ", x)
-            print("crop_shape.shape: ", x.shape)
-            return x
-        crop_shape = tf.py_func(my_func3, [crop_shape], tf.int32)
-
         sliced_inputs = tf.slice(inputs, offsets, crop_shape)
-
-        def my_func4(x):
-            print("sliced_inputs.shape: ", x.shape)
-            return x
-        sliced_inputs = tf.py_func(my_func4, [sliced_inputs], tf.float32)
-
         out_inputs = tf.reshape(sliced_inputs, crop_shape)
         return out_inputs
 
@@ -225,28 +201,8 @@ def random_crop(images, labels,
         images_height = images_shape[0]
         images_width = images_shape[1]
 
-        # def my_funch(x):
-        #     print("image height: ", x)
-        #     return x
-        # images_height = tf.py_func(my_funch, [images_height], tf.int32)
-
-        # def my_funcw(x):
-        #     print("image width: ", x)
-        #     return x
-        # images_width = tf.py_func(my_funcw, [images_width], tf.int32)
-
         max_offset_height = tf.reshape(images_height-crop_height+1, [])
         max_offset_width = tf.reshape(images_width-crop_width+1, [])
-
-        # def my_funcc(x):
-        #     print("max_offset height: ", x)
-        #     return x
-        # max_offset_height = tf.py_func(my_funcc, [max_offset_height], tf.int32)
-
-        # def my_funcg(x):
-        #     print("max_offset width: ", x)
-        #     return x
-        # max_offset_width = tf.py_func(my_funcg, [max_offset_width], tf.int32)
 
         generator_func_height = functools.partial(
             tf.random_uniform,
@@ -264,47 +220,22 @@ def random_crop(images, labels,
             _IMAGE_CROP_KEY+'_1',
             preprocess_vars_cache)
 
-        # def my_funcll(x):
-        #     print("RAND offset height: ", x)
-        #     return x
-        # offset_height = tf.py_func(my_funcll, [offset_height], tf.int32)
-
-        # def my_funcpp(x):
-        #     print("RAND offset width: ", x)
-        #     return x
-        # offset_width = tf.py_func(my_funcpp, [offset_width], tf.int32)
-
         offsets = tf.to_int32(tf.stack([offset_height, offset_width, 0]))
         crop_shape_images = tf.stack(
             [crop_height, crop_width, images_channel_dim])
         crop_shape_labels = tf.stack(
             [crop_height, crop_width, labels_channel_dim])
 
-        # def my_functttt(x):
-        #     print("offsets tensor: ", x)
-        #     return x
-        # offsets = tf.py_func(my_functttt, [offsets], tf.int32)
-
-        # def my_funckk(x):
-        #     print("crop_shape_images tensor: ", x)
-        #     return x
-        # crop_shape_images = tf.py_func(my_funckk, [crop_shape_images], tf.int32)
-
-        # def my_funcii(x):
-        #     print("crop_shape_labels: ", x)
-        #     return x
-        # crop_shape_labels = tf.py_func(my_funcii, [crop_shape_labels], tf.int32)
-
-        images = _apply_random_crop(images, offsets, crop_shape_images)
-        labels = _apply_random_crop(images, offsets, crop_shape_labels)
+        cropped_images = _apply_random_crop(images, offsets, crop_shape_images)
+        cropped_labels = _apply_random_crop(labels, offsets, crop_shape_labels)
 
         # Must set shape here or in the set shape preprocessor step
         # when dealing with ICNet
         if images_channel_dim and labels_channel_dim:
-            images.set_shape((crop_height, crop_width, images_channel_dim))
-            labels.set_shape((crop_height, crop_width, labels_channel_dim))
+            cropped_images.set_shape((crop_height, crop_width, images_channel_dim))
+            cropped_labels.set_shape((crop_height, crop_width, labels_channel_dim))
 
-        return images, labels
+        return cropped_images, cropped_labels
 
 
 def random_vertical_flip(image,

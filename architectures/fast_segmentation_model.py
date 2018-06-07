@@ -27,10 +27,6 @@ class FastSegmentationModel(object):
     def num_classes(self):
         return self._num_classes
 
-    @property
-    def groundtruth_lists(self, field):
-        return self._groundtruth_lists
-
     def groundtruth_has_field(self, field_name):
         """Check if a ground truth image exists for a given input"""
         return field_name in self._groundtruth_lists

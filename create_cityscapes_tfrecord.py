@@ -65,7 +65,7 @@ def create_tf_example(image_path, label_path, image_dir='', is_jpeg=False):
     full_label_path = os.path.join(image_dir, label_path)
     image, encoded_image = _open_file(full_image_path)
     label, encoded_label = _open_file(full_label_path)
-  
+
     height = image.height
     width = image.width
     if height != label.height or width != label.width:
@@ -127,7 +127,7 @@ def main(_):
         annot_filenames = glob.glob(FLAGS.annot_pattern)
         if len(image_filenames) != len(annot_filenames):
             raise ValueError('Supplied patterns do not have image counts.')
-    
+
     _create_tf_record(
             sorted(image_filenames),
             sorted(annot_filenames),

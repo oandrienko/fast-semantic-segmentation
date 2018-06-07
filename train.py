@@ -63,6 +63,11 @@ flags.mark_flag_as_required('logdir')
 flags.DEFINE_integer('save_every_n_hours', 999,
                      'Time between successive saves of a checkpoint')
 
+# Debug flag
+
+flags.DEFINE_boolean('test_image_summaries', False, 'Check inputs to network')
+
+
 
 def create_training_input(create_input_fn,
                           preprocess_fn,
@@ -79,8 +84,8 @@ def create_training_input(create_input_fn,
         tensor_dict[dicy_key] = float_images
         return tensor_dict
 
-    tensor_dict = cast_and_reshape(tensor_dict, dataset_builder._IMAGE_FIELD)
-    tensor_dict = cast_and_reshape(tensor_dict, dataset_builder._LABEL_FIELD)
+    tensor_dict = cast_and_reshape(tensor_dict,
+                    dataset_builder._IMAGE_FIELD)
 
     if preprocess_fn is not None:
         preprocessor = preprocess_fn()
@@ -118,7 +123,7 @@ def create_training_model_losses(input_queue, create_model_fn, train_config):
         preprocessed_images.append(resized_image)
     images = tf.concat(preprocessed_images, 0, name="Inputs")
 
-    segmentation_model.provide_groundtruth(labels)
+    segmentation_model.provide_groundtruth(labels[0])
     prediction_dict = segmentation_model.predict(images)
 
     # with tf.Session() as sess:
@@ -144,7 +149,8 @@ def train_segmentation_model(create_model_fn,
                              clone_on_cpu,
                              replica_id,
                              num_replicas,
-                             save_every_n_hours):
+                             save_every_n_hours,
+                             image_summaries):
     """Create an instance of the FastSegmentationModel"""
     _, segmentation_model = create_model_fn()
     deploy_config = model_deploy.DeploymentConfig(
@@ -232,10 +238,54 @@ def train_segmentation_model(create_model_fn,
             with tf.control_dependencies([update_op]):
                 train_op = tf.identity(total_loss, name='train_op')
 
-        graph = tf.get_default_graph()
-        summary_image = graph.get_tensor_by_name('Inputs:0')
-        summaries.add(
-          tf.summary.image('VerifyTrainImage/Inputs', summary_image))
+        ##############################################################################################################
+        # TEMPORARY...
+        if image_summaries:
+            graph = tf.get_default_graph()
+            pixel_scaling = max(1, 255 // 19)
+            summ_first_clone_scope = (first_clone_scope + '/'
+                if first_clone_scope else '')
+            main_in = graph.get_tensor_by_name(
+                    '%sfifo_queue_Dequeue:1' % summ_first_clone_scope)
+            main_out = graph.get_tensor_by_name(
+                    '%sPredictions/Conv/BiasAdd:0' % summ_first_clone_scope)
+            main_gt = graph.get_tensor_by_name(
+                    '%sfifo_queue_Dequeue:3' % summ_first_clone_scope)
+            aux_out_0 = graph.get_tensor_by_name(
+                    '%sCascadeFeatureFusion_0/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
+            aux_gt_0 = graph.get_tensor_by_name(
+                    '%sFirstBranchAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
+            aux_out_1 = graph.get_tensor_by_name(
+                    '%sCascadeFeatureFusion_1/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
+            aux_gt_1 = graph.get_tensor_by_name(
+                    '%sSecondBranchAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
+            summaries.add(
+              tf.summary.image('VerifyTrainImage/Main/Inputs', main_in))
+            main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
+            main_out = tf.cast(main_out * pixel_scaling, tf.uint8)
+            summaries.add(
+              tf.summary.image('VerifyTrainImage/Main/Outputs', main_out))
+            main_gt = tf.cast(main_gt * pixel_scaling, tf.uint8)
+            summaries.add(
+              tf.summary.image('VerifyTrainImage/Main/GT', main_gt))
+
+            aux_out_0 = tf.expand_dims(tf.argmax(aux_out_0, 3), -1)
+            aux_out_0 = tf.cast(aux_out_0 * pixel_scaling, tf.uint8)
+            summaries.add(
+              tf.summary.image('VerifyTrainImage/FirstBranchAux/Outputs', aux_out_0))
+            aux_gt_0 = tf.cast(aux_gt_0 * pixel_scaling, tf.uint8)
+            summaries.add(
+              tf.summary.image('VerifyTrainImage/FirstBranchAux/GT', aux_gt_0))
+
+            aux_out_1 = tf.expand_dims(tf.argmax(aux_out_1, 3), -1)
+            aux_out_1 = tf.cast(aux_out_1 * pixel_scaling, tf.uint8)
+            summaries.add(
+              tf.summary.image('VerifyTrainImage/SecondBranchAux/Outputs', aux_out_1))
+            aux_gt_1 = tf.cast(aux_gt_1 * pixel_scaling, tf.uint8)
+            summaries.add(
+              tf.summary.image('VerifyTrainImage/SecondBranchAux/GT', aux_gt_1))
+        ##############################################################################################################
+
 
         # Add the summaries from the first clone. These contain the summaries
         # created by model_fn and either optimize_clones() or _gather_clone_loss().
@@ -271,8 +321,6 @@ def train_segmentation_model(create_model_fn,
                 ignore_missing_vars=True)
         else:
             tf.logging.info('Not initializing the model from a checkpoint.')
-
-        tf.local_variables_initializer()
 
         # Main training loop
         slim.learning.train(
@@ -325,7 +373,8 @@ def main(_):
         replica_id=FLAGS.task,
         num_replicas=FLAGS.num_replicas,
         num_ps_tasks=FLAGS.num_ps_tasks,
-        save_every_n_hours=FLAGS.save_every_n_hours)
+        save_every_n_hours=FLAGS.save_every_n_hours,
+        image_summaries=FLAGS.test_image_summaries)
 
 
 if __name__ == '__main__':

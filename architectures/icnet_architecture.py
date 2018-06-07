@@ -78,9 +78,9 @@ class ICNetArchitecture(model.FastSegmentationModel):
             # Fusions of branches
             first_fusion, first_aux_logits = self._cascade_feature_fusion(
                 pooled_quarter_res, half_res,
-                scope="CascadeFeatureFusion_1")
+                scope="CascadeFeatureFusion_0")
             second_fusion, second_aux_logits = self._cascade_feature_fusion(
-                first_fusion, full_res, scope="CascadeFeatureFusion_2")
+                first_fusion, full_res, scope="CascadeFeatureFusion_1")
             # Class class_predictions
             with tf.variable_scope("Predictions"):
                 interp_fusion = self._dynamic_interpolation(second_fusion, z_factor=2)
@@ -181,33 +181,37 @@ class ICNetArchitecture(model.FastSegmentationModel):
         second_aux_preds = prediction_dict['second_aux_predictions']
 
         def _resize_labels_to_logits(labels, logits, num_classes):
-            labels = tf.squeeze(labels, 0);
             scaled_labels = tf.image.resize_nearest_neighbor(
                 labels, logits.shape[1:3], align_corners=True)
             return scaled_labels
 
+        def _resize_logits_to_labels(logits, labels, num_classes):
+            scaled_logits = tf.image.resize_bilinear(
+                logits, labels.shape[1:3], align_corners=True)
+            return scaled_logits
+
         with tf.name_scope('SegmentationLoss'):
-            main_labels = _resize_labels_to_logits(
-                    self._groundtruth_labels, main_preds,
-                    num_classes=self._num_classes)
-            main_loss = self._classification_loss(main_preds, main_labels)
+            final_scaled_preds = _resize_logits_to_labels(main_preds,
+                self._groundtruth_labels, num_classes=self._num_classes)
+            main_loss = self._classification_loss(final_scaled_preds,
+                                                  self._groundtruth_labels)
             losses_dict['loss'] = main_loss
 
         if self._use_aux_loss:
             with tf.name_scope('FirstBranchAuxLoss'):
-                scaled_labels = _resize_labels_to_logits(
+                first_scaled_labels = _resize_labels_to_logits(
                     self._groundtruth_labels, first_aux_preds,
                     num_classes=self._num_classes)
                 first_aux_loss = self._classification_loss(first_aux_preds,
-                                                           scaled_labels)
+                                                        first_scaled_labels)
                 losses_dict['first_aux_loss'] = (
                     self._first_branch_loss_weight * first_aux_loss)
             with tf.name_scope('SecondBranchAuxLoss'):
-                scaled_labels = _resize_labels_to_logits(
+                second_scaled_labels = _resize_labels_to_logits(
                     self._groundtruth_labels, second_aux_preds,
                     num_classes=self._num_classes)
                 second_aux_loss = self._classification_loss(second_aux_preds,
-                                                           scaled_labels)
+                                                        second_scaled_labels)
                 losses_dict['second_aux_loss'] = (
                     self._second_branch_loss_weight * second_aux_loss)
         return losses_dict
