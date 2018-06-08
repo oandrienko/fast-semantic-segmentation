@@ -71,7 +71,6 @@ def create_predictions_and_labels(model, create_input_dict_fn,
     out_outputs = tf.image.resize_bilinear(outputs,
         size=(input_height, input_width),
         align_corners=True)
-
     out_images = tf.expand_dims(input_list[0], 0)
     return out_outputs, out_labels, out_images
 
@@ -127,10 +126,10 @@ def main(_):
             "InputImage", inputs, family="Images")
     groundtruth_viz = tf.cast(labels*pixel_scaling, tf.uint8)
     tf.summary.image(
-            "GroundtruthImage", groundtruth_viz, family="Images")
+            "GroundtruthImage", groundtruth_viz, family="EvalImages")
     predictions_viz = tf.cast(predictions*pixel_scaling, tf.uint8)
     tf.summary.image(
-            "PredictionImage", predictions_viz, family="Images")
+            "PredictionImage", predictions_viz, family="EvalImages")
 
     # Define the evaluation metric.
     metric_map = {}
