@@ -50,9 +50,9 @@ message VarianceScalingInitializer {
 }
 
 message BatchNorm {
-    optional float decay = 1 [default = 0.999];
+    optional float decay = 1 [default = 0.9997];
     optional bool center = 2 [default = true];
-    optional bool scale = 3 [default = false];
-    optional float epsilon = 4 [default = 0.001];
+    optional bool scale = 3 [default = true];
+    optional float epsilon = 4 [default = 0.00001];
     optional bool train = 5 [default = true];
 }

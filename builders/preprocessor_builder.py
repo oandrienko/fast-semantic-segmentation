@@ -16,7 +16,7 @@ _RANDOM_SCALE_STEP_KEY = 'RANDOM_SCALE_STEP'
 
 _IMAGE_CROP_KEY = 'IMAGE_CROP_STEP'
 
-_IMAGE_VERTICAL_FLIP_KEY = 'IMAGE_VERTICAL_FLIP_STEP'
+_IMAGE_SCALE_KEY = 'IMAGE_SCALE_KEY'
 
 _IMAGE_HORIZONTAL_FLIP_KEY = 'IMAGE_HORIZONTAL_FLIP_STEP'
 
@@ -156,7 +156,9 @@ def random_scale(images,
                  seed=_RANDOM_PREPROCESSOR_SEED,
                  preprocess_vars_cache=None):
     with tf.name_scope('RandomScale', values=[images, labels]):
-        image_height, image_width ,_ = tf.shape(images)
+        shape = tf.shape(images)
+        image_height = shape[0]
+        image_width = shape[1]
 
         generator_func = functools.partial(
             tf.random_uniform, [],
@@ -170,19 +172,18 @@ def random_scale(images,
                     tf.multiply(tf.to_float(image_height), size_coef))
         image_newxsize = tf.to_int32(
                     tf.multiply(tf.to_float(image_width), size_coef))
+        new_shape = (image_newysize, image_newxsize)
 
         # Must be 4D tensor for resize ops
         images = tf.expand_dims(images, 0)
         labels = tf.expand_dims(labels, 0)
-        with tf.control_dependencies(shape_assert):
-            images = tf.image.resize_bilinear(
-                images, [image_newysize, image_newxsize], align_corners=True)
-            labels = tf.image.resize_nearest_neighbor(
-                labels, [image_newysize, image_newxsize], align_corners=True)
-        images = tf.squeeze(images, [0])
-        labels = tf.squeeze(labels, [0])
-
-    return images, labels
+        scaled_images = tf.image.resize_bilinear(
+                                images, new_shape, align_corners=True)
+        scaled_labels = tf.image.resize_nearest_neighbor(
+                                labels, new_shape, align_corners=True)
+        output_images = tf.squeeze(scaled_images, [0])
+        output_labels = tf.squeeze(scaled_labels, [0])
+        return output_images, output_labels
 
 
 def random_crop(images, labels,
@@ -234,65 +235,31 @@ def random_crop(images, labels,
         if images_channel_dim and labels_channel_dim:
             cropped_images.set_shape((crop_height, crop_width, images_channel_dim))
             cropped_labels.set_shape((crop_height, crop_width, labels_channel_dim))
-
         return cropped_images, cropped_labels
 
 
-def random_vertical_flip(image,
-                         label=None,
-                         seed=_RANDOM_PREPROCESSOR_SEED,
-                         preprocess_vars_cache=None):
-
-    def _flip_image(image):
-        image_flipped = tf.image.flip_up_down(image)
-        return image_flipped
-
-    with tf.name_scope('RandomVerticalFlip', values=[image, label]):
-        result = []
-        generator_func = functools.partial(tf.random_uniform, [], seed=seed)
-        do_a_flip_random = _get_or_create_preprocess_rand_vars(
-            generator_func, _IMAGE_VERTICAL_FLIP_KEY,
-            preprocess_vars_cache)
-        do_a_flip_random = tf.greater(do_a_flip_random, 0.5)
-
-        image = tf.cond(do_a_flip_random,
-            lambda: _flip_image(image), lambda: image)
-        result.append(image)
-
-        if label is not None:
-            image = tf.cond(do_a_flip_random,
-                lambda: _flip_image(label), lambda: label)
-            result.append(image)
-
-    return tuple(result)
-
-
-def random_horizontal_flip(image,
-                           label=None,
+def random_horizontal_flip(images,
+                           labels,
                            seed=_RANDOM_PREPROCESSOR_SEED,
                            preprocess_vars_cache=None):
 
-    def _flip_image(image):
-        image_flipped = tf.image.flip_left_right(image)
-        return image_flipped
+    def _flip_image(item):
+        flipped_item = tf.image.flip_left_right(item)
+        return flipped_item
 
-    with tf.name_scope('RandomHorizontalFlip', values=[image, label]):
-        result = []
-        generator_func = functools.partial(tf.random_uniform, [], seed=seed)
+    with tf.name_scope('RandomHorizontalFlip', values=[images, labels]):
+        generator_func = functools.partial(
+                            tf.random_uniform, [], seed=seed)
         do_a_flip_random = _get_or_create_preprocess_rand_vars(
             generator_func, _IMAGE_HORIZONTAL_FLIP_KEY,
             preprocess_vars_cache)
         do_a_flip_random = tf.greater(do_a_flip_random, 0.5)
 
-        image = tf.cond(do_a_flip_random,
-            lambda: _flip_image(image), lambda: image)
-        result.append(image)
-
-        if label is not None:
-            image = tf.cond(do_a_flip_random,
-                lambda: _flip_image(label), lambda: label)
-            result.append(image)
-    return tuple(result)
+        flipped_images = tf.cond(do_a_flip_random,
+            lambda: _flip_image(images), lambda: images)
+        flipped_labels = tf.cond(do_a_flip_random,
+                lambda: _flip_image(labels), lambda: labels)
+        return flipped_images, flipped_labels
 
 
 def preprocess_runner(tensor_dict, func_list, preprocess_vars_cache=None):
@@ -317,12 +284,13 @@ def preprocess_runner(tensor_dict, func_list, preprocess_vars_cache=None):
     shape_assert = tf.Assert(
         tf.equal(images_shape, labels_shape),
         ["Label and Image shape must match"])
+
     for preprocessor_step_func in func_list:
-        results = preprocessor_step_func(images=images, labels=labels,
+        images, labels = preprocessor_step_func(images=images, labels=labels,
                         preprocess_vars_cache=preprocess_vars_cache)
 
-    tensor_dict[dataset_builder._IMAGE_FIELD] = results[0]
-    tensor_dict[dataset_builder._LABEL_FIELD] = results[1]
+    tensor_dict[dataset_builder._IMAGE_FIELD] = images
+    tensor_dict[dataset_builder._LABEL_FIELD] = labels
     return tensor_dict
 
 
@@ -359,7 +327,7 @@ def build(preprocessor_config_list):
         # Randomly Scale the image
         if step_type == 'random_image_scale':
             config = preprocessor_step_config.random_image_scale
-            if not (config.max_scale_ratio <= config.min_scale_ratio):
+            if not (config.max_scale_ratio >= config.min_scale_ratio):
                 raise ValueError('min_scale_ratio > max_scale_ratio')
 
             image_scale_fn = functools.partial(
@@ -385,12 +353,6 @@ def build(preprocessor_config_list):
             image_horizontal_flip_fn = functools.partial(
                 random_horizontal_flip)
             proprocessor_func_list.append(image_horizontal_flip_fn)
-
-        if step_type == 'random_vertical_flip':
-            config = preprocessor_step_config.random_vertical_flip
-            image_vertical_flip_fn = functools.partial(
-                random_horizontal_flip)
-            proprocessor_func_list.append(image_vertical_flip_fn)
 
         if len(proprocessor_func_list) <= 0 and \
             len(preprocessor_config_list) > 0:

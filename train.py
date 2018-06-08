@@ -164,10 +164,10 @@ def train_segmentation_model(create_model_fn,
     per_clone_batch_size = train_config.batch_size // num_clones
 
     preprocess_fn = None
-    if train_config.preprocessor_options:
+    if train_config.preprocessor_step:
         preprocess_fn = functools.partial(
             preprocessor_builder.build,
-            preprocessor_config_list=train_config.preprocessor_options)
+            preprocessor_config_list=train_config.preprocessor_step)
 
     with tf.Graph().as_default():
 

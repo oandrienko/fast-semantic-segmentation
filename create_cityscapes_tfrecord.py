@@ -86,7 +86,8 @@ def create_tf_example(image_path, label_path, image_dir='', is_jpeg=False):
                 'png'.encode('utf8')),
     }
 
-    example = tf.train.Example(features=tf.train.Features(feature=feature_dict))
+    example = tf.train.Example(
+        features=tf.train.Features(feature=feature_dict))
     return example
 
 

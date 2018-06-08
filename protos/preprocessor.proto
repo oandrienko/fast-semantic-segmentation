@@ -9,7 +9,6 @@ message PreprocessingStep {
         RandomImageScale random_image_scale = 3;
         RandomCropImage random_image_crop = 4;
         RandomHorizontalFlip random_horizontal_flip = 5;
-        RandomVerticalFlip random_vertical_flip = 6;
     }
 }
 
@@ -54,5 +53,3 @@ message RandomCropImage {
 }
 
 message RandomHorizontalFlip {}
-
-message RandomVerticalFlip {}

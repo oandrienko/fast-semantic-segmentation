@@ -7,7 +7,7 @@ import "protos/preprocessor.proto";
 
 message TrainConfig {
     optional uint32 batch_size = 1 [default=32];
-    repeated PreprocessingStep preprocessor_options = 2;
+    repeated PreprocessingStep preprocessor_step = 2;
     optional uint32 keep_checkpoint_every_n_hours = 3 [default=1000];
     optional Optimizer optimizer = 4;
     optional string fine_tune_checkpoint = 5 [default=""];
