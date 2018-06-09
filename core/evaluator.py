@@ -9,33 +9,9 @@ from builders import model_builder
 from protos import pipeline_pb2
 
 
-tf.logging.set_verbosity(tf.logging.INFO)
-
 slim = tf.contrib.slim
 
 prefetch_queue = slim.prefetch_queue
-
-flags = tf.app.flags
-
-FLAGS = flags.FLAGS
-
-flags.DEFINE_string('logdir', '',
-                    'Directory containing checkpoints to evaluate, typically '
-                    'set to `train_dir` used in the training job.')
-flags.mark_flag_as_required('logdir')
-
-flags.DEFINE_string('eval_dir', '',
-                    'Directory to write eval summaries to.')
-flags.mark_flag_as_required('eval_dir')
-
-flags.DEFINE_string('config_path', '',
-                    'Path to a pipeline_pb2.TrainEvalConfig config '
-                    'file. If provided, other configs are ignored')
-flags.mark_flag_as_required('config_path')
-
-flags.DEFINE_integer('eval_interval_secs', 300,
-                     'How often do run evaluation loop in seconds. Defaults '
-                     'to 5 minutes (300s).')
 
 
 def encode_image_array_as_png_str(image):
@@ -75,17 +51,11 @@ def create_predictions_and_labels(model, create_input_dict_fn,
     return out_outputs, out_labels, out_images
 
 
-def main(_):
-    tf.gfile.MakeDirs(FLAGS.eval_dir)
-    pipeline_config = pipeline_pb2.PipelineConfig()
-    with tf.gfile.GFile(FLAGS.config_path, "r") as f:
-        proto_str = f.read()
-        text_format.Merge(proto_str, pipeline_config)
-    eval_config = pipeline_config.eval_config
-    input_config = pipeline_config.eval_input_reader
-    model_config = pipeline_config.model
-
-    ## SOME VALIDATION HERE
+def eval_segmentation_model_once(eval_config, input_config, model_config,
+                                 train_dir,
+                                 eval_dir,
+                                 checkpoint_path,
+                                 master=''):
 
     create_input_fn = functools.partial(
         dataset_builder.build,
@@ -119,20 +89,7 @@ def main(_):
         flattened_labels), flattened_labels)
     eval_predictions = flattened_predictions
 
-    # Image summaries
-    global_step = tf.train.get_global_step()
-    pixel_scaling = max(1, 255 // num_classes)
-    tf.summary.image(
-            "InputImage", inputs, family="Images")
-    groundtruth_viz = tf.cast(labels*pixel_scaling, tf.uint8)
-    tf.summary.image(
-            "GroundtruthImage", groundtruth_viz, family="EvalImages")
-    predictions_viz = tf.cast(predictions*pixel_scaling, tf.uint8)
-    tf.summary.image(
-            "PredictionImage", predictions_viz, family="EvalImages")
-
     # Define the evaluation metric.
-    # TODO: tf.contrib.metrics.streaming_mean_iou vs tf.metrics.mean_iou ???
     metric_map = {}
     predictions_tag="mIoU"
     metric_map[predictions_tag] = tf.contrib.metrics.streaming_mean_iou(
@@ -149,21 +106,14 @@ def main(_):
 
     summary_op = tf.summary.merge_all()
 
-    # eval every 5 minutes
-    max_number_of_evaluations = None
-    if eval_config.max_evals:
-        max_number_of_evaluations = eval_config.max_evals
-    slim.evaluation.evaluation_loop(
-        eval_op=eval_op,
-        summary_op=summary_op,
-        max_number_of_evaluations=max_number_of_evaluations,
-        variables_to_restore=variables_to_restore,
-        master='',
-        checkpoint_dir=FLAGS.logdir,
-        logdir=FLAGS.eval_dir,
-        num_evals=eval_config.num_examples,
-        eval_interval_secs=FLAGS.eval_interval_secs)
+    final_result = slim.evaluation.evaluate_once(
+                    master=master,
+                    checkpoint_path=checkpoint_path,
+                    logdir=eval_dir,
+                    num_evals=eval_config.num_examples,
+                    eval_op=eval_op,
+                    final_op=metric_map[predictions_tag],
+                    summary_op=summary_op,
+                    variables_to_restore=variables_to_restore)
 
-
-if __name__ == '__main__':
-    tf.app.run()
+    return final_result

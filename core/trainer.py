@@ -2,7 +2,6 @@ import functools
 import json
 import os
 import tensorflow as tf
-from google.protobuf import text_format
 from deployment import model_deploy
 
 from builders import model_builder
@@ -11,62 +10,9 @@ from builders import preprocessor_builder
 from builders import optimizer_builder
 from protos import pipeline_pb2
 
-
-tf.logging.set_verbosity(tf.logging.INFO)
-
 slim = tf.contrib.slim
 
 prefetch_queue = slim.prefetch_queue
-
-flags = tf.app.flags
-
-FLAGS = flags.FLAGS
-
-# Distributed training settings
-
-flags.DEFINE_integer('num_clones', 1,
-                     'Number of model clones to deploy to each worker replica.'
-                     'This should be greater than one if you want to use '
-                     'multiple GPUs located on a single machine.')
-
-flags.DEFINE_boolean('clone_on_cpu', False, 'Use CPUs to deploy clones.')
-
-flags.DEFINE_integer('num_replicas', 1,
-                     'Number of worker replicas. This typically corresponds '
-                     'to the number of machines you are training on. Note '
-                     'that the training will be done asynchronously.')
-
-flags.DEFINE_integer('startup_delay_steps', 15,
-                     'Number of training steps between replicas startup.')
-
-flags.DEFINE_integer('num_ps_tasks', 0,
-                     'The number of parameter servers. If the value is 0, then '
-                     'the parameters are handled locally by the worker. It is '
-                     'reccomended to use num_ps_tasks=num_replicas/2.')
-
-flags.DEFINE_string('master', '', 'BNS name of the tensorflow server')
-
-flags.DEFINE_integer('task', 0, 'The task ID. Should increment per worker '
-                     'replica added to achieve between graph replication.')
-
-# Training configuration settings
-
-flags.DEFINE_string('config_path', '',
-                    'Path to a pipeline_pb2.TrainEvalConfig config '
-                    'file. If provided, other configs are ignored')
-flags.mark_flag_as_required('config_path')
-
-flags.DEFINE_string('logdir', '',
-                    'Directory to save the checkpoints and training summaries.')
-flags.mark_flag_as_required('logdir')
-
-flags.DEFINE_integer('save_every_n_hours', 999,
-                     'Time between successive saves of a checkpoint')
-
-# Debug flag
-
-flags.DEFINE_boolean('test_image_summaries', False, 'Check inputs to network')
-
 
 
 def create_training_input(create_input_fn,
@@ -136,9 +82,7 @@ def create_training_model_losses(input_queue, create_model_fn, train_config):
         tf.losses.add_loss(loss_tensor)
 
 
-def train_segmentation_model(create_model_fn,
-                             create_input_fn,
-                             train_config,
+def train_segmentation_model(train_config, input_config, model_config,
                              master,
                              task,
                              is_chief,
@@ -150,9 +94,18 @@ def train_segmentation_model(create_model_fn,
                              clone_on_cpu,
                              replica_id,
                              num_replicas,
-                             save_every_n_hours,
-                             image_summaries):
+                             save_every_n_hours):
     """Create an instance of the FastSegmentationModel"""
+
+    create_model_fn = functools.partial(
+        model_builder.build,
+        model_config=model_config,
+        is_training=True)
+
+    create_input_fn = functools.partial(
+        dataset_builder.build,
+        input_reader_config=input_config)
+
     _, segmentation_model = create_model_fn()
     deploy_config = model_deploy.DeploymentConfig(
         num_clones=num_clones,
@@ -239,54 +192,6 @@ def train_segmentation_model(create_model_fn,
             with tf.control_dependencies([update_op]):
                 train_op = tf.identity(total_loss, name='train_op')
 
-        ##############################################################################################################
-        # TEMPORARY...
-        if image_summaries:
-            graph = tf.get_default_graph()
-            pixel_scaling = max(1, 255 // 19)
-            summ_first_clone_scope = (first_clone_scope + '/'
-                if first_clone_scope else '')
-            main_in = graph.get_tensor_by_name(
-                    '%sfifo_queue_Dequeue:1' % summ_first_clone_scope)
-            main_out = graph.get_tensor_by_name(
-                    '%sPredictions/Conv/BiasAdd:0' % summ_first_clone_scope)
-            main_gt = graph.get_tensor_by_name(
-                    '%sfifo_queue_Dequeue:3' % summ_first_clone_scope)
-            aux_out_0 = graph.get_tensor_by_name(
-                    '%sCascadeFeatureFusion_0/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
-            aux_gt_0 = graph.get_tensor_by_name(
-                    '%sFirstBranchAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
-            aux_out_1 = graph.get_tensor_by_name(
-                    '%sCascadeFeatureFusion_1/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
-            aux_gt_1 = graph.get_tensor_by_name(
-                    '%sSecondBranchAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
-            summaries.add(
-              tf.summary.image('VerifyTrainImage/Main/Inputs', main_in))
-            main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
-            main_out = tf.cast(main_out * pixel_scaling, tf.uint8)
-            summaries.add(
-              tf.summary.image('VerifyTrainImage/Main/Outputs', main_out))
-            main_gt = tf.cast(main_gt * pixel_scaling, tf.uint8)
-            summaries.add(
-              tf.summary.image('VerifyTrainImage/Main/GT', main_gt))
-
-            aux_out_0 = tf.expand_dims(tf.argmax(aux_out_0, 3), -1)
-            aux_out_0 = tf.cast(aux_out_0 * pixel_scaling, tf.uint8)
-            summaries.add(
-              tf.summary.image('VerifyTrainImage/FirstBranchAux/Outputs', aux_out_0))
-            aux_gt_0 = tf.cast(aux_gt_0 * pixel_scaling, tf.uint8)
-            summaries.add(
-              tf.summary.image('VerifyTrainImage/FirstBranchAux/GT', aux_gt_0))
-
-            aux_out_1 = tf.expand_dims(tf.argmax(aux_out_1, 3), -1)
-            aux_out_1 = tf.cast(aux_out_1 * pixel_scaling, tf.uint8)
-            summaries.add(
-              tf.summary.image('VerifyTrainImage/SecondBranchAux/Outputs', aux_out_1))
-            aux_gt_1 = tf.cast(aux_gt_1 * pixel_scaling, tf.uint8)
-            summaries.add(
-              tf.summary.image('VerifyTrainImage/SecondBranchAux/GT', aux_gt_1))
-        ##############################################################################################################
-
 
         # Add the summaries from the first clone. These contain the summaries
         # created by model_fn and either optimize_clones() or _gather_clone_loss().
@@ -324,60 +229,18 @@ def train_segmentation_model(create_model_fn,
             tf.logging.info('Not initializing the model from a checkpoint.')
 
         # Main training loop
-        slim.learning.train(
-            train_op,
-            logdir=train_dir,
-            master=master,
-            is_chief=is_chief,
-            session_config=session_config,
-            number_of_steps=train_config.num_steps,
-            startup_delay_steps=startup_delay_steps,
-            init_fn=init_fn,
-            summary_op=summary_op,
-            save_summaries_secs=120,
-            saver=saver)
+        total_losss = slim.learning.train(
+                        train_op,
+                        logdir=train_dir,
+                        master=master,
+                        is_chief=is_chief,
+                        session_config=session_config,
+                        number_of_steps=train_config.num_steps,
+                        startup_delay_steps=startup_delay_steps,
+                        init_fn=init_fn,
+                        summary_op=summary_op,
+                        save_summaries_secs=600,
+                        # log_every_n_steps=1000,
+                        saver=saver)
 
-
-def main(_):
-    tf.gfile.MakeDirs(FLAGS.logdir)
-    pipeline_config = pipeline_pb2.PipelineConfig()
-    with tf.gfile.GFile(FLAGS.config_path, "r") as f:
-        proto_str = f.read()
-        text_format.Merge(proto_str, pipeline_config)
-
-    model_config = pipeline_config.model
-    train_config = pipeline_config.train_config
-    input_config = pipeline_config.train_input_reader
-
-    create_model_fn = functools.partial(
-        model_builder.build,
-        model_config=model_config,
-        is_training=True)
-
-    create_input_fn = functools.partial(
-        dataset_builder.build,
-        input_reader_config=input_config)
-
-    is_chief = (FLAGS.task == 0)
-
-    train_segmentation_model(
-        create_model_fn,
-        create_input_fn,
-        train_config,
-        master=FLAGS.master,
-        task=FLAGS.task,
-        is_chief=is_chief,
-        startup_delay_steps=FLAGS.startup_delay_steps,
-        train_dir=FLAGS.logdir,
-        num_clones=FLAGS.num_clones,
-        num_worker_replicas=FLAGS.num_replicas,
-        clone_on_cpu=FLAGS.clone_on_cpu,
-        replica_id=FLAGS.task,
-        num_replicas=FLAGS.num_replicas,
-        num_ps_tasks=FLAGS.num_ps_tasks,
-        save_every_n_hours=FLAGS.save_every_n_hours,
-        image_summaries=FLAGS.test_image_summaries)
-
-
-if __name__ == '__main__':
-    tf.app.run()
+        return total_loss
