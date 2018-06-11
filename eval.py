@@ -135,9 +135,10 @@ def main(_):
     # TODO: tf.contrib.metrics.streaming_mean_iou vs tf.metrics.mean_iou ???
     metric_map = {}
     predictions_tag="mIoU"
-    metric_map[predictions_tag] = tf.contrib.metrics.streaming_mean_iou(
+    value_op, update_op = tf.contrib.metrics.streaming_mean_iou(
                         eval_predictions, eval_labels, num_classes,
                         weights=tf.to_float(neg_validity_mask))
+    metric_map[predictions_tag] = (value_op, update_op)
     metrics_to_values, metrics_to_updates = (
         tf.contrib.metrics.aggregate_metric_map(metric_map))
     for metric_name, metric_value in six.iteritems(metrics_to_values):
@@ -153,16 +154,18 @@ def main(_):
     max_number_of_evaluations = None
     if eval_config.max_evals:
         max_number_of_evaluations = eval_config.max_evals
-    slim.evaluation.evaluation_loop(
-        eval_op=eval_op,
-        summary_op=summary_op,
-        max_number_of_evaluations=max_number_of_evaluations,
-        variables_to_restore=variables_to_restore,
-        master='',
-        checkpoint_dir=FLAGS.logdir,
-        logdir=FLAGS.eval_dir,
-        num_evals=eval_config.num_examples,
-        eval_interval_secs=FLAGS.eval_interval_secs)
+    main_metric = slim.evaluation.evaluation_loop(
+                    eval_op=eval_op,
+                    final_op=value_op,
+                    summary_op=summary_op,
+                    max_number_of_evaluations=max_number_of_evaluations,
+                    variables_to_restore=variables_to_restore,
+                    master='',
+                    checkpoint_dir=FLAGS.logdir,
+                    logdir=FLAGS.eval_dir,
+                    num_evals=eval_config.num_examples,
+                    eval_interval_secs=FLAGS.eval_interval_secs)
+    print('Evaluation over. Eval values: ', main_metric)
 
 
 if __name__ == '__main__':

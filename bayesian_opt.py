@@ -1,4 +1,12 @@
-r"""Search for Hyperparameters using Baysian Optimization"""
+r"""Search for Hyperparameters using Baysian Optimization
+
+Example Usage:
+
+    python bayesian_opt.py
+        --config_path=configs/bayes_icnet_resnet_v1_cityscapes.config \
+        --logdir=tmp/test_baye \
+        --num_trials=11 | tee baye_test_log.log
+"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -26,8 +34,9 @@ from protos import pipeline_pb2
 from core.evaluator import eval_segmentation_model_once
 from core.trainer import train_segmentation_model
 
-tf.logging.set_verbosity(tf.logging.ERROR)
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tf.logging.set_verbosity(tf.logging.INFO)
+# tf.logging.set_verbosity(tf.logging.ERROR)
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 flags = tf.app.flags
 
