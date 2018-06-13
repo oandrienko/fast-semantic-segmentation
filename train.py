@@ -195,10 +195,12 @@ def train_segmentation_model(create_model_fn,
                 model_fn, [input_queue])
             first_clone_scope = deploy_config.clone_scope(0)
 
-            # Gather update_ops from the first clone. These contain, for example,
-            # the updates for the batch_norm variables created by model_fn.
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,
-                                           first_clone_scope)
+            # Attempt to sync BN updates across all GPU's in a tower
+            update_ops = []
+            for idx in range(num_clones):
+                nth_clone_sope = deploy_config.clone_scope(0)
+                update_ops.extend(tf.get_collection(tf.GraphKeys.UPDATE_OPS,
+                                          nth_clone_sope))
 
         # Init variable to collect summeries
         summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
