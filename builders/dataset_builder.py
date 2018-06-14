@@ -12,7 +12,7 @@ dataset = slim.dataset
 
 dataset_data_provider = slim.dataset_data_provider
 
-_DATASET_SHUFFLE_SEED = 777;
+_DATASET_SHUFFLE_SEED = 7
 
 _IMAGE_FIELD            = 'image'
 _IMAGE_NAME_FIELD       = 'image_name'
