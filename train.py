@@ -223,7 +223,7 @@ def train_segmentation_model(create_model_fn,
 
         # TODO(@oandrien): we might want to add  gradient multiplier here
         # for the last layer if we have trouble with training
-        with tf.device(deploy_config.variables_device()): # CPU of common ps server
+        with tf.device(deploy_config.optimizer_device()): # CPU of common ps server
             reg_losses = (None if train_config.add_regularization_loss
                                else [])
             total_loss, grads_and_vars = model_deploy.optimize_clones(
@@ -253,7 +253,7 @@ def train_segmentation_model(create_model_fn,
             main_out = graph.get_tensor_by_name(
                     '%sPredictions/Conv/BiasAdd:0' % summ_first_clone_scope)
             main_gt = graph.get_tensor_by_name(
-                    '%sfifo_queue_Dequeue:3' % summ_first_clone_scope)
+                    '%sSegmentationLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
             aux_out_0 = graph.get_tensor_by_name(
                     '%sCascadeFeatureFusion_0/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
             aux_gt_0 = graph.get_tensor_by_name(
@@ -263,30 +263,30 @@ def train_segmentation_model(create_model_fn,
             aux_gt_1 = graph.get_tensor_by_name(
                     '%sSecondBranchAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
             summaries.add(
-              tf.summary.image('VerifyTrainImage/Main/Inputs', main_in))
+              tf.summary.image('VerifyTrainImageInput/Inputs', main_in))
             main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
             main_out = tf.cast(main_out * pixel_scaling, tf.uint8)
             summaries.add(
-              tf.summary.image('VerifyTrainImage/Main/Outputs', main_out))
+              tf.summary.image('VerifyTrainImageMain/Predictions', main_out))
             main_gt = tf.cast(main_gt * pixel_scaling, tf.uint8)
             summaries.add(
-              tf.summary.image('VerifyTrainImage/Main/GT', main_gt))
+              tf.summary.image('VerifyTrainImageMain/Groundtruths', main_gt))
 
             aux_out_0 = tf.expand_dims(tf.argmax(aux_out_0, 3), -1)
             aux_out_0 = tf.cast(aux_out_0 * pixel_scaling, tf.uint8)
             summaries.add(
-              tf.summary.image('VerifyTrainImage/FirstBranchAux/Outputs', aux_out_0))
+              tf.summary.image('VerifyTrainImageFirstBranchAux/Predictions', aux_out_0))
             aux_gt_0 = tf.cast(aux_gt_0 * pixel_scaling, tf.uint8)
             summaries.add(
-              tf.summary.image('VerifyTrainImage/FirstBranchAux/GT', aux_gt_0))
+              tf.summary.image('VerifyTrainImageFirstBranchAux/Groundtruths', aux_gt_0))
 
             aux_out_1 = tf.expand_dims(tf.argmax(aux_out_1, 3), -1)
             aux_out_1 = tf.cast(aux_out_1 * pixel_scaling, tf.uint8)
             summaries.add(
-              tf.summary.image('VerifyTrainImage/SecondBranchAux/Outputs', aux_out_1))
+              tf.summary.image('VerifyTrainImageSecondBranchAux/Predictions', aux_out_1))
             aux_gt_1 = tf.cast(aux_gt_1 * pixel_scaling, tf.uint8)
             summaries.add(
-              tf.summary.image('VerifyTrainImage/SecondBranchAux/GT', aux_gt_1))
+              tf.summary.image('VerifyTrainImageSecondBranchAux/Groundtruths', aux_gt_1))
         ##############################################################################################################
 
 

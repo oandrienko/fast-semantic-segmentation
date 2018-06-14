@@ -181,14 +181,15 @@ class ICNetArchitecture(model.FastSegmentationModel):
     def loss(self, prediction_dict, scope=None):
         losses_dict = {}
         main_preds = prediction_dict['class_predictions']
-        first_aux_preds_orig = prediction_dict['first_aux_predictions']
-        second_aux_preds_orig = prediction_dict['second_aux_predictions']
+        first_aux_preds = prediction_dict['first_aux_predictions']
+        second_aux_preds = prediction_dict['second_aux_predictions']
 
+        # TODO: Make this an optional choice. For now only scale
+        # down labels like in original paper
         def _resize_labels_to_logits(labels, logits, num_classes):
             scaled_labels = tf.image.resize_nearest_neighbor(
                 labels, logits.shape[1:3], align_corners=True)
             return scaled_labels
-
         def _resize_logits_to_labels(logits, labels, num_classes, s_factor=1):
             labels_h, labels_w = labels.shape[1:3]
             new_logits_size = (labels_h//s_factor, labels_w//s_factor)
@@ -196,18 +197,16 @@ class ICNetArchitecture(model.FastSegmentationModel):
                 logits, new_logits_size, align_corners=True)
             return scaled_logits
 
-        with tf.name_scope('SegmentationLoss'):
-            final_scaled_preds = _resize_logits_to_labels(main_preds,
-                self._groundtruth_labels, num_classes=self._num_classes)
-            main_loss = self._classification_loss(final_scaled_preds,
-                                                  self._groundtruth_labels)
-            losses_dict['loss'] = main_loss
+        with tf.name_scope('SegmentationLoss'): # 1/4 labels
+            main_scaled_labels = _resize_labels_to_logits(
+                self._groundtruth_labels, main_preds,
+                num_classes=self._num_classes)
+            main_loss = self._classification_loss(main_preds,
+                                            main_scaled_labels)
+            losses_dict['loss'] = (main_loss * self._main_loss_weight)
 
         if self._use_aux_loss:
-            with tf.name_scope('FirstBranchAuxLoss'): # 1/4 scale
-                first_aux_preds = _resize_logits_to_labels(
-                    first_aux_preds_orig, self._groundtruth_labels,
-                    num_classes=self._num_classes, s_factor=4)
+            with tf.name_scope('FirstBranchAuxLoss'): # 1/16 labels
                 first_scaled_labels = _resize_labels_to_logits(
                     self._groundtruth_labels, first_aux_preds,
                     num_classes=self._num_classes)
@@ -215,10 +214,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
                                                         first_scaled_labels)
                 losses_dict['first_aux_loss'] = (
                     self._first_branch_loss_weight * first_aux_loss)
-            with tf.name_scope('SecondBranchAuxLoss'): # 1/2 scale
-                second_aux_preds = _resize_logits_to_labels(
-                    second_aux_preds_orig, self._groundtruth_labels,
-                    num_classes=self._num_classes, s_factor=2)
+            with tf.name_scope('SecondBranchAuxLoss'): # 1/8 labels
                 second_scaled_labels = _resize_labels_to_logits(
                     self._groundtruth_labels, second_aux_preds,
                     num_classes=self._num_classes)
