@@ -37,6 +37,8 @@ flags.DEFINE_integer('eval_interval_secs', 300,
                      'How often do run evaluation loop in seconds. Defaults '
                      'to 5 minutes (300s).')
 
+flags.DEFINE_boolean('verbose', False, 'To show mIoU update every image or not')
+
 
 def encode_image_array_as_png_str(image):
     image_pil = Image.fromarray(np.uint8(image))
@@ -138,6 +140,8 @@ def main(_):
     value_op, update_op = tf.contrib.metrics.streaming_mean_iou(
                         eval_predictions, eval_labels, num_classes,
                         weights=tf.to_float(neg_validity_mask))
+    if FLAGS.verbose:
+        update_op = tf.Print(update_op, [value_op], predictions_tag)
     metric_map[predictions_tag] = (value_op, update_op)
     metrics_to_values, metrics_to_updates = (
         tf.contrib.metrics.aggregate_metric_map(metric_map))

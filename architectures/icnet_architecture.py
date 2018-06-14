@@ -158,6 +158,10 @@ class ICNetArchitecture(model.FastSegmentationModel):
                                normalizer_fn=slim.batch_norm,
                                activation_fn=None,
                                scope="Conv")
+            # Hack to avoid conv shape (1, 129, 257, 256) and
+            # dilated_conv shape shape (1, 128, 256, 256) mismatch when
+            # evaluating on 1025x2049 cityscapes
+            conv = tf.image.resize_bilinear(conv, size=dilated_conv.shape[1:3])
             branch_merge = tf.add_n([conv, dilated_conv])
             output = tf.nn.relu(branch_merge)
 
