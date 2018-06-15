@@ -4,7 +4,7 @@ package fast_semantic_segmentation.protos;
 
 message Loss {
     optional ClassificationLoss classification_loss = 1;
-    optional bool use_aux_loss = 2 [default=false];
+    optional bool use_aux_loss = 2 [default=true];
     optional float main_loss_weight = 3;
     optional float second_branch_loss_weight = 4;
     optional float first_branch_loss_weight = 5;

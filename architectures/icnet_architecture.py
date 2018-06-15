@@ -38,6 +38,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
                 batch_norm_decay=0.9997,
                 batch_norm_epsilon=1e-5,
                 add_summaries=True,
+                psp_module_output=False,
                 scope=None):
         super(ICNetArchitecture, self).__init__(num_classes=num_classes)
         self._is_training = is_training
@@ -53,6 +54,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
         self._batch_norm_decay = batch_norm_decay
         self._batch_norm_epsilon = batch_norm_epsilon
         self._add_summaries = add_summaries
+        self._psp_module_output = psp_module_output
 
     @property
     def shared_feature_extractor_scope(self):
@@ -87,10 +89,18 @@ class ICNetArchitecture(model.FastSegmentationModel):
                 final_logits = slim.conv2d(interp_fusion, self._num_classes, 1, 1,
                                activation_fn=None, normalizer_fn=None)
             # Outputs with auxilarary loss for training
-            prediction_dict = {
-                'first_aux_predictions': first_aux_logits,
-                'second_aux_predictions': second_aux_logits,
-                'class_predictions': final_logits}
+            prediction_dict = {}
+            if self._psp_module_output:
+                quarter_res_logits = slim.conv2d(pooled_quarter_res,
+                    self._num_classes, 1, 1,
+                    activation_fn=None, normalizer_fn=None,
+                    name='PSPModulePredictions')
+                prediction_dict['class_predictions'] = quarter_res_logits
+            else:
+                prediction_dict['class_predictions'] = final_logits
+            if self._use_aux_loss:
+                prediction_dict['first_aux_predictions'] = first_aux_logits
+                prediction_dict['second_aux_predictions'] = second_aux_logits
             return prediction_dict
 
     def _extract_shared_features(self, preprocessed_inputs, scope):
@@ -101,6 +111,10 @@ class ICNetArchitecture(model.FastSegmentationModel):
             scope=scope)
 
     def _first_feature_branch(self, input_features):
+        """A suggestion here is to first train the first resolution
+        branche without considering other branches. After some M number of
+        steps, begin training all branches as normal.
+        """
         with tf.variable_scope('PSPModule'):
             _, input_h, input_w, _ = input_features.get_shape()
             full_pool = slim.avg_pool2d(input_features, [input_h, input_w],
@@ -180,10 +194,6 @@ class ICNetArchitecture(model.FastSegmentationModel):
 
     def loss(self, prediction_dict, scope=None):
         losses_dict = {}
-        main_preds = prediction_dict['class_predictions']
-        first_aux_preds = prediction_dict['first_aux_predictions']
-        second_aux_preds = prediction_dict['second_aux_predictions']
-
         # TODO: Make this an optional choice. For now only scale
         # down labels like in original paper
         def _resize_labels_to_logits(labels, logits, num_classes):
@@ -197,6 +207,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
                 logits, new_logits_size, align_corners=True)
             return scaled_logits
 
+        main_preds = prediction_dict['class_predictions']
         with tf.name_scope('SegmentationLoss'): # 1/4 labels
             main_scaled_labels = _resize_labels_to_logits(
                 self._groundtruth_labels, main_preds,
@@ -206,6 +217,8 @@ class ICNetArchitecture(model.FastSegmentationModel):
             losses_dict['loss'] = (main_loss * self._main_loss_weight)
 
         if self._use_aux_loss:
+            first_aux_preds = prediction_dict['first_aux_predictions']
+            second_aux_preds = prediction_dict['second_aux_predictions']
             with tf.name_scope('FirstBranchAuxLoss'): # 1/16 labels
                 first_scaled_labels = _resize_labels_to_logits(
                     self._groundtruth_labels, first_aux_preds,
@@ -233,9 +246,9 @@ class ICNetArchitecture(model.FastSegmentationModel):
             return self._feature_extractor.restore_from_classification_checkpoint_fn(
                 self.shared_feature_extractor_scope)
 
-        # exclude_list = ['global_step']
-        # variables_to_restore = slim.get_variables_to_restore(
-        #         exclude=exclude_list)
+        exclude_list = ['global_step']
+        variables_to_restore = slim.get_variables_to_restore(
+                exclude=exclude_list)
 
         variables_to_restore = tf.global_variables()
         variables_to_restore.append(slim.get_or_create_global_step())

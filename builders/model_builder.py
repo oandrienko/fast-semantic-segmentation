@@ -53,7 +53,8 @@ def _build_icnet_model(icnet_config, is_training, add_summaries):
         'feature_extractor': feature_extractor,
         'classification_loss': classification_loss,
         'use_aux_loss': use_aux_loss,
-        'add_summaries': add_summaries
+        'add_summaries': add_summaries,
+        'psp_module_output': icnet_config.psp_module_output
     }
 
     if use_aux_loss:
