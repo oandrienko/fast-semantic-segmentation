@@ -67,12 +67,12 @@ def create_predictions_and_labels(model, create_input_dict_fn,
     inputs = model.preprocess(input_list[0])
     inputs = tf.expand_dims(inputs, 0)
     output_dict = model.predict(inputs)
-    outputs = output_dict['class_predictions']
-    outputs = tf.argmax(outputs, 3)
-    outputs = tf.expand_dims(outputs, -1)
-    out_outputs = tf.image.resize_bilinear(outputs,
+    outputs_map = output_dict['class_predictions']
+    outputs_map = tf.image.resize_bilinear(outputs_map,
         size=(input_height, input_width),
         align_corners=True)
+    outputs = tf.argmax(outputs_map, 3)
+    out_outputs = tf.expand_dims(outputs, -1)
     out_images = tf.expand_dims(input_list[0], 0)
     return out_outputs, out_labels, out_images
 
