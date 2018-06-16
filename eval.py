@@ -62,19 +62,27 @@ def create_predictions_and_labels(model, create_input_dict_fn,
     input_queue = prefetch_queue.prefetch_queue([images, labels])
     input_list = input_queue.dequeue()
 
-    out_labels = inputs = tf.expand_dims(input_list[1], 0)
+    out_labels = tf.expand_dims(input_list[1], 0)
 
     inputs = model.preprocess(input_list[0])
     inputs = tf.expand_dims(inputs, 0)
     output_dict = model.predict(inputs)
     outputs_map = output_dict['class_predictions']
+
+    val_labels = tf.expand_dims(input_dict[
+                    dataset_builder._LABEL_FIELD], 0)
+    model.provide_groundtruth(val_labels)
+    val_losses = model.loss(output_dict)
+    main_loss = val_losses['loss']
+
     outputs_map = tf.image.resize_bilinear(outputs_map,
         size=(input_height, input_width),
         align_corners=True)
     outputs = tf.argmax(outputs_map, 3)
     out_outputs = tf.expand_dims(outputs, -1)
     out_images = tf.expand_dims(input_list[0], 0)
-    return out_outputs, out_labels, out_images
+
+    return out_outputs, out_labels, out_images, main_loss
 
 
 def main(_):
@@ -99,7 +107,7 @@ def main(_):
     ignore_label = eval_config.ignore_label
 
     num_classes, segmentation_model = create_model_fn()
-    predictions, labels, inputs = create_predictions_and_labels(
+    predictions, labels, inputs, main_loss = create_predictions_and_labels(
         model=segmentation_model,
         create_input_dict_fn=create_input_fn,
         input_height=eval_config.fixed_height,
@@ -120,6 +128,9 @@ def main(_):
     eval_labels = tf.where(validity_mask, tf.zeros_like(
         flattened_labels), flattened_labels)
     eval_predictions = flattened_predictions
+
+    # val Loss summary
+    tf.summary.scalar("Losses/ValidationLoss",  main_loss)
 
     # Image summaries
     global_step = tf.train.get_global_step()
