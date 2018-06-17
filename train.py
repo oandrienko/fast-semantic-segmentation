@@ -317,7 +317,7 @@ def train_segmentation_model(create_model_fn,
 
             variables_to_restore = segmentation_model.restore_map(
               fine_tune_checkpoint_type=train_config.fine_tune_checkpoint_type)
-
+            
             init_fn = slim.assign_from_checkpoint_fn(
                 train_config.fine_tune_checkpoint,
                 variables_to_restore,

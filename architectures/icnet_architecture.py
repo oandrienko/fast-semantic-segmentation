@@ -38,7 +38,6 @@ class ICNetArchitecture(model.FastSegmentationModel):
                 batch_norm_decay=0.9997,
                 batch_norm_epsilon=1e-5,
                 add_summaries=True,
-                psp_module_output=False,
                 scope=None):
         super(ICNetArchitecture, self).__init__(num_classes=num_classes)
         self._is_training = is_training
@@ -54,7 +53,6 @@ class ICNetArchitecture(model.FastSegmentationModel):
         self._batch_norm_decay = batch_norm_decay
         self._batch_norm_epsilon = batch_norm_epsilon
         self._add_summaries = add_summaries
-        self._psp_module_output = psp_module_output
 
     @property
     def shared_feature_extractor_scope(self):
@@ -89,15 +87,8 @@ class ICNetArchitecture(model.FastSegmentationModel):
                 final_logits = slim.conv2d(interp_fusion, self._num_classes, 1, 1,
                                activation_fn=None, normalizer_fn=None)
             # Outputs with auxilarary loss for training
-            prediction_dict = {}
-            if self._psp_module_output:
-                quarter_res_logits = slim.conv2d(pooled_quarter_res,
-                    self._num_classes, 1, 1,
-                    activation_fn=None, normalizer_fn=None,
-                    name='PSPModulePredictions')
-                prediction_dict['class_predictions'] = quarter_res_logits
-            else:
-                prediction_dict['class_predictions'] = final_logits
+            prediction_dict = {
+                'class_predictions': final_logits}
             if self._use_aux_loss:
                 prediction_dict['first_aux_predictions'] = first_aux_logits
                 prediction_dict['second_aux_predictions'] = second_aux_logits
@@ -134,14 +125,14 @@ class ICNetArchitecture(model.FastSegmentationModel):
             third_pool = tf.image.resize_bilinear(third_pool,
                                 size=(input_h, input_w),
                                 align_corners=True)
-            quarter_pool = slim.avg_pool2d(input_features,
-                                        [input_h//4, input_w//4],
-                                stride=(input_h//4, input_w//4))
-            quarter_pool = tf.image.resize_bilinear(quarter_pool,
+            forth_pool = slim.avg_pool2d(input_features,
+                                        [input_h//6, input_w//6],
+                                stride=(input_h//6, input_w//6))
+            forth_pool = tf.image.resize_bilinear(forth_pool,
                                 size=(input_h, input_w),
                                 align_corners=True)
             branch_merge = tf.add_n([input_features, full_pool,
-                                     half_pool, third_pool, quarter_pool])
+                                     half_pool, third_pool, forth_pool])
             output = slim.conv2d(branch_merge, 512//self._filter_scale, [1, 1],
                                  stride=1, normalizer_fn=slim.batch_norm,
                                  scope='Conv1x1')
@@ -239,7 +230,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
 
     def restore_map(self,
                     fine_tune_checkpoint_type='segmentation'):
-        if fine_tune_checkpoint_type not in ['segmentation', 'classification']:
+        if fine_tune_checkpoint_type not in ['segmentation', 'classification', 'segmentation-finetune']:
             raise ValueError('Not supported fine_tune_checkpoint_type: {}'.format(
                 fine_tune_checkpoint_type))
         if fine_tune_checkpoint_type == 'classification':
@@ -247,12 +238,10 @@ class ICNetArchitecture(model.FastSegmentationModel):
                 self.shared_feature_extractor_scope)
 
         exclude_list = ['global_step']
-        variables_to_restore = slim.get_variables_to_restore(
-                exclude=exclude_list)
-
-        variables_to_restore = tf.global_variables()
-        variables_to_restore.append(slim.get_or_create_global_step())
-
+        variables_to_restore = slim.get_variables_to_restore(exclude=exclude_list)
+        if fine_tune_checkpoint_type == 'segmentation':
+            variables_to_restore.append(slim.get_or_create_global_step())
+        
         return variables_to_restore
 
 

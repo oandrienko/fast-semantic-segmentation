@@ -10,7 +10,6 @@ message ICNet {
     optional float filter_scale = 3;
     optional Hyperparams hyperparams = 4;
     optional Loss loss = 5;
-    optional bool psp_module_output = 6 [default=false];
 }
 
 message ICNetFeatureExtractor {
