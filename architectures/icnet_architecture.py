@@ -62,7 +62,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
         if inputs.dtype is not tf.float32:
             raise ValueError('`preprocess` expects a tf.float32 tensor')
 
-        with tf.variable_scope('Preprocessor'):
+        with tf.name_scope('Preprocessor'):
             return self._feature_extractor.preprocess(inputs)
 
     def predict(self, preprocessed_inputs, scope=None):
@@ -82,10 +82,11 @@ class ICNetArchitecture(model.FastSegmentationModel):
             second_fusion, second_aux_logits = self._cascade_feature_fusion(
                 first_fusion, full_res, scope="CascadeFeatureFusion_1")
             # Class class_predictions
-            with tf.variable_scope("Predictions"):
-                interp_fusion = self._dynamic_interpolation(second_fusion, z_factor=2)
-                final_logits = slim.conv2d(interp_fusion, self._num_classes, 1, 1,
-                               activation_fn=None, normalizer_fn=None)
+            with tf.name_scope("Predictions"):
+                interp_fusion = self._dynamic_interpolation(
+                                        second_fusion, z_factor=2)
+                final_logits = slim.conv2d(interp_fusion, self._num_classes,
+                                1, 1, activation_fn=None, normalizer_fn=None)
             # Outputs with auxilarary loss for training
             prediction_dict = {
                 'class_predictions': final_logits}
@@ -96,7 +97,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
 
     def _extract_shared_features(self, preprocessed_inputs, scope):
         half_scape_inputs = self._dynamic_interpolation(
-            preprocessed_inputs, s_factor=2)
+            preprocessed_inputs, s_factor=0.5)
         return self._feature_extractor.extract_features(
             half_scape_inputs,
             scope=scope)
@@ -106,28 +107,29 @@ class ICNetArchitecture(model.FastSegmentationModel):
         branche without considering other branches. After some M number of
         steps, begin training all branches as normal.
         """
-        with tf.variable_scope('PSPModule'):
+        with tf.name_scope('PSPModule'):
             _, input_h, input_w, _ = input_features.get_shape()
+
             full_pool = slim.avg_pool2d(input_features, [input_h, input_w],
                                 stride=(input_h, input_w))
             full_pool = tf.image.resize_bilinear(full_pool,
                                 size=(input_h, input_w),
                                 align_corners=True)
             half_pool = slim.avg_pool2d(input_features,
-                                        [input_h//2, input_w//2],
-                                stride=(input_h//2, input_w//2))
+                                        [input_h/2, input_w/2],
+                                stride=(input_h/2, input_w/2))
             half_pool = tf.image.resize_bilinear(half_pool,
                                 size=(input_h, input_w),
                                 align_corners=True)
             third_pool = slim.avg_pool2d(input_features,
-                                        [input_h//3, input_w//3],
-                                stride=(input_h//3, input_w//3))
+                                        [input_h/3, input_w/3],
+                                stride=(input_h/3, input_w/3))
             third_pool = tf.image.resize_bilinear(third_pool,
                                 size=(input_h, input_w),
                                 align_corners=True)
             forth_pool = slim.avg_pool2d(input_features,
-                                        [input_h//6, input_w//6],
-                                stride=(input_h//6, input_w//6))
+                                        [input_h/6, input_w/6],
+                                stride=(input_h/6, input_w/6))
             forth_pool = tf.image.resize_bilinear(forth_pool,
                                 size=(input_h, input_w),
                                 align_corners=True)
@@ -151,9 +153,12 @@ class ICNetArchitecture(model.FastSegmentationModel):
 
     def _cascade_feature_fusion(self, first_feature_map,
                                 second_feature_map, scope):
+        aux_output = None
         with tf.variable_scope(scope):
-            upsampled_inputs = self._dynamic_interpolation(first_feature_map, z_factor=2)
-            dilated_conv = slim.conv2d(upsampled_inputs, 256//self._filter_scale,
+            upsampled_inputs = self._dynamic_interpolation(
+                first_feature_map, z_factor=2)
+            dilated_conv = slim.conv2d(upsampled_inputs,
+                                      256//self._filter_scale,
                                       [3, 3], stride=1, rate=2,
                                        normalizer_fn=slim.batch_norm,
                                        activation_fn=None,
@@ -163,33 +168,36 @@ class ICNetArchitecture(model.FastSegmentationModel):
                                normalizer_fn=slim.batch_norm,
                                activation_fn=None,
                                scope="Conv")
-            # Hack to avoid conv shape (1, 129, 257, 256) and
-            # dilated_conv shape shape (1, 128, 256, 256) mismatch when
-            # evaluating on 1025x2049 cityscapes
             conv = tf.image.resize_bilinear(conv, size=dilated_conv.shape[1:3])
             branch_merge = tf.add_n([conv, dilated_conv])
             output = tf.nn.relu(branch_merge)
-
-            aux_output = slim.conv2d(upsampled_inputs, self._num_classes, 1, 1,
-                               activation_fn=None, normalizer_fn=None,
+            if self._is_training:
+                aux_output = slim.conv2d(upsampled_inputs, self._num_classes,
+                               1, 1, activation_fn=None, normalizer_fn=None,
                                scope="AuxOutput")
         return output, aux_output
 
-    def _dynamic_interpolation(self, features_to_upsample, z_factor=1, s_factor=1):
-        with tf.variable_scope('Interp'):
-            _, input_h, input_w, _ = features_to_upsample.shape
-            new_shape = (int(input_h*z_factor/s_factor),
-                         int(input_w*z_factor/s_factor))
-            return tf.image.resize_bilinear(features_to_upsample, new_shape,
-                align_corners=True)
+    def _dynamic_interpolation(self, features_to_upsample,
+                               s_factor=1, z_factor=1):
+        with tf.name_scope('Interp'):
+            _, input_h, input_w, _ = features_to_upsample.get_shape().as_list()
+            shrink_h = (input_h-1)*s_factor+1
+            shrink_w = (input_w-1)*s_factor+1
+            zoom_h = shrink_h + (shrink_h-1)*(z_factor-1)
+            zoom_w = shrink_w + (shrink_w-1)*(z_factor-1)
+            return tf.image.resize_bilinear(features_to_upsample,
+                                            [int(zoom_h), int(zoom_w)],
+                                            align_corners=True)
 
     def loss(self, prediction_dict, scope=None):
         losses_dict = {}
         # TODO: Make this an optional choice. For now only scale
         # down labels like in original paper
         def _resize_labels_to_logits(labels, logits, num_classes):
+            import pdb; pdb.set_trace()
+            logits_shape = logits.get_shape().as_list()
             scaled_labels = tf.image.resize_nearest_neighbor(
-                labels, logits.shape[1:3], align_corners=True)
+                labels, logits_shape[1:3], align_corners=True)
             return scaled_labels
         def _resize_logits_to_labels(logits, labels, num_classes, s_factor=1):
             labels_h, labels_w = labels.shape[1:3]
@@ -207,7 +215,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
                                             main_scaled_labels)
             losses_dict['loss'] = (main_loss * self._main_loss_weight)
 
-        if self._use_aux_loss:
+        if self._use_aux_loss and self._is_training:
             first_aux_preds = prediction_dict['first_aux_predictions']
             second_aux_preds = prediction_dict['second_aux_predictions']
             with tf.name_scope('FirstBranchAuxLoss'): # 1/16 labels
@@ -230,18 +238,21 @@ class ICNetArchitecture(model.FastSegmentationModel):
 
     def restore_map(self,
                     fine_tune_checkpoint_type='segmentation'):
-        if fine_tune_checkpoint_type not in ['segmentation', 'classification', 'segmentation-finetune']:
-            raise ValueError('Not supported fine_tune_checkpoint_type: {}'.format(
-                fine_tune_checkpoint_type))
+        if fine_tune_checkpoint_type not in [
+                    'segmentation', 'classification', 'segmentation-finetune']:
+            raise ValueError('Not supported '
+                             'fine_tune_checkpoint_type: {}'.format(
+                             fine_tune_checkpoint_type))
         if fine_tune_checkpoint_type == 'classification':
-            return self._feature_extractor.restore_from_classification_checkpoint_fn(
+            return self._feature_extractor.restore_from_classif_checkpoint_fn(
                 self.shared_feature_extractor_scope)
 
         exclude_list = ['global_step']
-        variables_to_restore = slim.get_variables_to_restore(exclude=exclude_list)
+        variables_to_restore = slim.get_variables_to_restore(
+                                        exclude=exclude_list)
         if fine_tune_checkpoint_type == 'segmentation':
             variables_to_restore.append(slim.get_or_create_global_step())
-        
+
         return variables_to_restore
 
 
@@ -274,7 +285,7 @@ class ICNetFeatureExtractor(object):
     def _extract_features(self, preprocessed_inputs, scope):
         pass
 
-    def restore_from_classification_checkpoint_fn(self, scope_name):
+    def restore_from_classif_checkpoint_fn(self, scope_name):
         variables_to_restore = {}
         for variable in tf.global_variables():
             if variable.op.name.startswith(scope_name):

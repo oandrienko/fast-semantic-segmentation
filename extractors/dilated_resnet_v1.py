@@ -36,12 +36,15 @@ class DownSampleBlock(collections.namedtuple('Block', ['scope', 'unit_fn', 'args
 
 
 @slim.add_arg_scope
-def downsample(inputs, factor, stride=1, rate=1, scope=None):
+def downsample(inputs, s_factor, stride=1, rate=1, scope=None):
   """"""
   with tf.variable_scope(scope, 'Interp', [inputs]) as sc:
-    _, input_h, input_w, _ = inputs.shape
-    new_shape = (int(input_h//factor), int(input_w//factor))
-    return tf.image.resize_bilinear(inputs, new_shape)
+    _, input_h, input_w, _ = inputs.get_shape().as_list()
+    shrink_h = (input_h-1)*s_factor+1
+    shrink_w = (input_w-1)*s_factor+1
+    return tf.image.resize_bilinear(inputs,
+                                    [int(shrink_h), int(shrink_w)],
+                                    align_corners=True)
 
 
 @slim.add_arg_scope
@@ -139,7 +142,7 @@ def resnet_v1_block(scope, base_depth, num_units, stride, rate=1):
 def resnet_v1_downsample_block(scope, factor):
   """ """
   return DownSampleBlock(scope, downsample, [{
-    'factor': factor
+    's_factor': factor
   }])
 
 
@@ -162,7 +165,7 @@ def dilated_resnet_v1_50(inputs,
     resnet_v1_block('block1', base_depth=64//filter_scale,
                     num_units=3, stride=2),
 
-    resnet_v1_downsample_block('downsample_block', factor=2),
+    resnet_v1_downsample_block('downsample_block', factor=0.5),
 
     resnet_v1_block('block2', base_depth=128//filter_scale,
                     num_units=4, stride=2),
