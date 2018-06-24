@@ -2,48 +2,56 @@ from builders import hyperparams_builder
 from builders import losses_builder
 from protos import model_pb2
 
-from extractors import icnet_resnet_v1
+from extractors import pspnet_icnet_resnet_v1
+from architectures import pspnet_architecture
 from architectures import icnet_architecture
 
-# TODO(@oandrien): Add MobileNet feature extractor
-ICNET_FEATURE_EXTRACTER = {
+
+PSPNET_ICNET_FEATURE_EXTRACTER = {
     'dilated_resnet50':
-        icnet_resnet_v1.ICNetDilatedResnet50FeatureExtractor
+        pspnet_icnet_resnet_v1.PSPNetICNetDilatedResnet50FeatureExtractor
 }
 
 
-def _build_icnet_extractor(
-        feature_extractor_config, filter_scale, is_training, reuse_weights=None):
+def _build_pspnet_icnet_extractor(
+        feature_extractor_config, filter_scale, is_training,
+        mid_downsample=False, reuse_weights=None):
     feature_type = feature_extractor_config.type
 
-    if feature_type not in ICNET_FEATURE_EXTRACTER:
+    if feature_type not in PSPNET_ICNET_FEATURE_EXTRACTER:
         raise ValueError('Unknown ICNet feature_extractor: {}'.format(
             feature_type))
 
-    feature_extractor_class = ICNET_FEATURE_EXTRACTER[
+    feature_extractor_class = PSPNET_ICNET_FEATURE_EXTRACTER[
         feature_type]
     return feature_extractor_class(is_training,
-        filter_scale=filter_scale, reuse_weights=reuse_weights)
+                                   batch_norm_trainable=is_training,
+                                   filter_scale=filter_scale,
+                                   mid_downsample=mid_downsample,
+                                   reuse_weights=reuse_weights)
 
-
-def _build_icnet_model(icnet_config, is_training, add_summaries):
-    num_classes = icnet_config.num_classes
+def _build_pspnet_icnet_model(model_config, is_training, add_summaries):
+    num_classes = model_config.num_classes
     if not num_classes:
         raise ValueError('"num_classes" must be greater than 0.')
 
-    filter_scale = icnet_config.filter_scale
+    filter_scale = model_config.filter_scale
     if filter_scale > 1 or filter_scale < 0:
         raise ValueError('"filter_scale" must be in the range (0,1].')
 
-    feature_extractor = _build_icnet_extractor(
-      icnet_config.feature_extractor, filter_scale, is_training)
+    pretrain_single_branch_mode = model_config.pretrain_single_branch_mode
+    should_downsample_extractor = not pretrain_single_branch_mode
+    feature_extractor = _build_pspnet_icnet_extractor(
+            model_config.feature_extractor, filter_scale, is_training,
+            mid_downsample=should_downsample_extractor)
 
-    model_arg_scope = hyperparams_builder.build(
-        icnet_config.hyperparams, is_training)
+    model_arg_scope = hyperparams_builder.build(model_config.hyperparams,
+                                                is_training)
 
+    loss_config = model_config.loss
     classification_loss = (
-        losses_builder.build(icnet_config.loss))
-    use_aux_loss = icnet_config.loss.use_aux_loss
+            losses_builder.build(loss_config))
+    use_aux_loss = loss_config.use_auxiliary_loss
 
     common_kwargs = {
         'is_training': is_training,
@@ -57,24 +65,29 @@ def _build_icnet_model(icnet_config, is_training, add_summaries):
     }
 
     if use_aux_loss:
-        loss_config = icnet_config.loss
-        common_kwargs['main_loss_weight'] = loss_config.main_loss_weight
         common_kwargs[
-            'second_branch_loss_weight'] = loss_config.second_branch_loss_weight
+        'main_loss_weight'] = model_config.main_branch_loss_weight
         common_kwargs[
-            'first_branch_loss_weight'] = loss_config.first_branch_loss_weight
+        'second_branch_loss_weight'] = model_config.second_branch_loss_weight
+        common_kwargs[
+        'first_branch_loss_weight'] = model_config.first_branch_loss_weight
 
-    return num_classes, icnet_architecture.ICNetArchitecture(
-        filter_scale=filter_scale,
-        **common_kwargs)
+    return (num_classes, icnet_architecture.ICNetArchitecture(
+                    filter_scale=filter_scale,
+                    pretrain_single_branch_mode=pretrain_single_branch_mode,
+                    **common_kwargs))
 
 
 def build(model_config, is_training, add_summaries=True):
     if not isinstance(model_config, model_pb2.FastSegmentationModel):
-        raise ValueError('model_config not of type model_pb2.FastSegmentationModel.')
-    model = model_config.WhichOneof('model')
+        raise ValueError('model_config not of type '
+                         'model_pb2.FastSegmentationModel.')
 
-    if model == 'icnet':
-        return _build_icnet_model(model_config.icnet, is_training, add_summaries)
+    model = model_config.WhichOneof('model')
+    if model == 'pspnet':
+        raise ValueError('PSPNet is not fully implemented yet.')
+    elif model == 'icnet':
+        return _build_pspnet_icnet_model(
+            model_config.icnet, is_training, add_summaries)
 
     raise ValueError('Unknown model: {}'.format(model))

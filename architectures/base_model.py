@@ -13,6 +13,10 @@ inputs -> preprocess -> predict -> loss -> post-process (optional) -> outputs
 from abc import ABCMeta
 from abc import abstractmethod
 
+import tensorflow as tf
+
+slim = tf.contrib.slim
+
 
 class FastSegmentationModel(object):
     """Abstract base class for semantic segmentation models."""

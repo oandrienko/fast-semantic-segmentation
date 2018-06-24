@@ -8,7 +8,8 @@ def _softmax_classification_loss(predictions, labels, ignore_label):
     num_classes = predictions.get_shape().as_list()[-1]
     predictions = tf.reshape(predictions, [-1, num_classes])
 
-    one_hot_target = tf.contrib.slim.one_hot_encoding(flattened_labels,
+    one_hot_target = tf.contrib.slim.one_hot_encoding(
+                            tf.cast(flattened_labels, tf.int32),
                             num_classes, on_value=1.0, off_value=0.0)
     not_ignore_mask = tf.to_float(
                 tf.not_equal(flattened_labels, ignore_label))

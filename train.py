@@ -67,6 +67,9 @@ flags.DEFINE_integer('save_every_n_hours', 999,
 
 flags.DEFINE_boolean('test_image_summaries', False, 'Check inputs to network')
 
+flags.DEFINE_boolean('tmp_icnet_branch_summaries', False, 'temp flag')
+
+flags.DEFINE_boolean('tmp_psp_pretrain_summaries', False, 'temp flag')
 
 
 def create_training_input(create_input_fn,
@@ -106,6 +109,7 @@ def create_training_model_losses(input_queue, create_model_fn, train_config):
 
     # Optional quantization
     if train_config.quantize_with_delay:
+        tf.logging.info('Adding quantization nodes to training graph...')
         tf.contrib.quantize.create_training_graph(
             quant_delay=train_config.quantize_with_delay)
 
@@ -131,6 +135,7 @@ def create_training_model_losses(input_queue, create_model_fn, train_config):
     #     train_writer.add_graph(sess.graph)
     # import pdb; pdb.set_trace()
 
+    # Gather main and aux losses here to single collection
     losses_dict = segmentation_model.loss(prediction_dict)
     for loss_tensor in losses_dict.values():
         tf.losses.add_loss(loss_tensor)
@@ -195,12 +200,17 @@ def train_segmentation_model(create_model_fn,
                 model_fn, [input_queue])
             first_clone_scope = deploy_config.clone_scope(0)
 
-            # Attempt to sync BN updates across all GPU's in a tower
-            update_ops = []
-            for idx in range(num_clones):
-                nth_clone_sope = deploy_config.clone_scope(0)
-                update_ops.extend(tf.get_collection(tf.GraphKeys.UPDATE_OPS,
-                                          nth_clone_sope))
+            # Attempt to sync BN updates across all GPU's in a tower. Caution
+            # since this is very slow. Might not be needed
+            # update_ops = []
+            # for idx in range(num_clones):
+            #     nth_clone_sope = deploy_config.clone_scope(0)
+            #     update_ops.extend(tf.get_collection(tf.GraphKeys.UPDATE_OPS,
+            #                               nth_clone_sope))
+
+            # Gather updates from first GPU only
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,
+                                           first_clone_scope)
 
         # Init variable to collect summeries
         summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
@@ -221,7 +231,7 @@ def train_segmentation_model(create_model_fn,
         for model_var in slim.get_model_variables():
             summaries.add(tf.summary.histogram(model_var.op.name, model_var))
 
-        # TODO(@oandrien): we might want to add  gradient multiplier here
+        # TODO(@oandrien): we might want to add gradient multiplier here
         # for the last layer if we have trouble with training
         with tf.device(deploy_config.optimizer_device()): # CPU of common ps server
             reg_losses = (None if train_config.add_regularization_loss
@@ -254,14 +264,6 @@ def train_segmentation_model(create_model_fn,
                     '%sPredictions/Conv/BiasAdd:0' % summ_first_clone_scope)
             main_gt = graph.get_tensor_by_name(
                     '%sSegmentationLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
-            aux_out_0 = graph.get_tensor_by_name(
-                    '%sCascadeFeatureFusion_0/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
-            aux_gt_0 = graph.get_tensor_by_name(
-                    '%sFirstBranchAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
-            aux_out_1 = graph.get_tensor_by_name(
-                    '%sCascadeFeatureFusion_1/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
-            aux_gt_1 = graph.get_tensor_by_name(
-                    '%sSecondBranchAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
             summaries.add(
               tf.summary.image('VerifyTrainImageInput/Inputs', main_in))
             main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
@@ -272,21 +274,43 @@ def train_segmentation_model(create_model_fn,
             summaries.add(
               tf.summary.image('VerifyTrainImageMain/Groundtruths', main_gt))
 
-            aux_out_0 = tf.expand_dims(tf.argmax(aux_out_0, 3), -1)
-            aux_out_0 = tf.cast(aux_out_0 * pixel_scaling, tf.uint8)
-            summaries.add(
-              tf.summary.image('VerifyTrainImageFirstBranchAux/Predictions', aux_out_0))
-            aux_gt_0 = tf.cast(aux_gt_0 * pixel_scaling, tf.uint8)
-            summaries.add(
-              tf.summary.image('VerifyTrainImageFirstBranchAux/Groundtruths', aux_gt_0))
+            if FLAGS.tmp_icnet_branch_summaries:
+                aux_out_0 = graph.get_tensor_by_name(
+                        '%sCascadeFeatureFusion_0/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
+                aux_gt_0 = graph.get_tensor_by_name(
+                        '%sFirstBranchAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
+                aux_out_1 = graph.get_tensor_by_name(
+                        '%sCascadeFeatureFusion_1/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
+                aux_gt_1 = graph.get_tensor_by_name(
+                        '%sSecondBranchAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
+                aux_out_0 = tf.expand_dims(tf.argmax(aux_out_0, 3), -1)
+                aux_out_0 = tf.cast(aux_out_0 * pixel_scaling, tf.uint8)
+                summaries.add(
+                  tf.summary.image('VerifyTrainImageFirstBranchAux/Predictions', aux_out_0))
+                aux_gt_0 = tf.cast(aux_gt_0 * pixel_scaling, tf.uint8)
+                summaries.add(
+                  tf.summary.image('VerifyTrainImageFirstBranchAux/Groundtruths', aux_gt_0))
 
-            aux_out_1 = tf.expand_dims(tf.argmax(aux_out_1, 3), -1)
-            aux_out_1 = tf.cast(aux_out_1 * pixel_scaling, tf.uint8)
-            summaries.add(
-              tf.summary.image('VerifyTrainImageSecondBranchAux/Predictions', aux_out_1))
-            aux_gt_1 = tf.cast(aux_gt_1 * pixel_scaling, tf.uint8)
-            summaries.add(
-              tf.summary.image('VerifyTrainImageSecondBranchAux/Groundtruths', aux_gt_1))
+                aux_out_1 = tf.expand_dims(tf.argmax(aux_out_1, 3), -1)
+                aux_out_1 = tf.cast(aux_out_1 * pixel_scaling, tf.uint8)
+                summaries.add(
+                  tf.summary.image('VerifyTrainImageSecondBranchAux/Predictions', aux_out_1))
+                aux_gt_1 = tf.cast(aux_gt_1 * pixel_scaling, tf.uint8)
+                summaries.add(
+                  tf.summary.image('VerifyTrainImageSecondBranchAux/Groundtruths', aux_gt_1))
+
+            if FLAGS.tmp_psp_pretrain_summaries:
+                aux_out = graph.get_tensor_by_name(
+                        '%sAuxPredictions/Conv/BiasAdd:0' % summ_first_clone_scope)
+                aux_gt = graph.get_tensor_by_name(
+                        '%sPretrainMainAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
+                aux_out = tf.expand_dims(tf.argmax(aux_out, 3), -1)
+                aux_out = tf.cast(aux_out * pixel_scaling, tf.uint8)
+                summaries.add(
+                  tf.summary.image('VerifyTrainImagePretrainMainAux/Predictions', aux_out))
+                aux_gt = tf.cast(aux_gt * pixel_scaling, tf.uint8)
+                summaries.add(
+                  tf.summary.image('VerifyTrainImagePretrainMainAux/Groundtruths', aux_gt))
         ##############################################################################################################
 
 
@@ -317,7 +341,7 @@ def train_segmentation_model(create_model_fn,
 
             variables_to_restore = segmentation_model.restore_map(
               fine_tune_checkpoint_type=train_config.fine_tune_checkpoint_type)
-            
+
             init_fn = slim.assign_from_checkpoint_fn(
                 train_config.fine_tune_checkpoint,
                 variables_to_restore,

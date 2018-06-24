@@ -1,17 +1,28 @@
 syntax = "proto2";
 
 package fast_semantic_segmentation.protos;
+import "protos/pspnet.proto";
 import "protos/hyperparams.proto";
 import "protos/losses.proto";
 
 message ICNet {
-    optional int32 num_classes = 1;
-    optional ICNetFeatureExtractor feature_extractor = 2;
-    optional float filter_scale = 3;
-    optional Hyperparams hyperparams = 4;
-    optional Loss loss = 5;
-}
 
-message ICNetFeatureExtractor {
-    optional string type = 1;
+    optional int32 num_classes = 1;
+
+    optional PSPNetICNetFeatureExtractor feature_extractor = 2;
+
+    optional Hyperparams hyperparams = 3;
+
+    // Multi-branch loss fields
+    optional Loss loss = 4;
+    optional float main_branch_loss_weight = 5;
+    optional float second_branch_loss_weight = 6;
+    optional float first_branch_loss_weight = 7;
+
+    // The filter compression factor when applying filter/channel pruning
+    optional float filter_scale = 8;
+
+    // Used to pretrain a base PSPNet-like base model. This pretrained
+    // model should be use to initialize ICNet for training all branches.
+    optional bool pretrain_single_branch_mode = 9 [default=true];
 }

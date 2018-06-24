@@ -54,26 +54,27 @@ def create_predictions_and_labels(model, create_input_dict_fn,
     input_dict = create_input_dict_fn()
     images = tf.to_float(input_dict[
                     dataset_builder._IMAGE_FIELD])
+    images = tf.image.pad_to_bounding_box(images, 0, 0, input_height, input_width)
     images.set_shape((input_height, input_width, 3))
     labels = tf.to_float(input_dict[
                     dataset_builder._LABEL_FIELD])
+    labels = tf.image.pad_to_bounding_box(labels, 0, 0, input_height, input_width)
     labels.set_shape((input_height, input_width, 1))
 
     input_queue = prefetch_queue.prefetch_queue([images, labels])
     input_list = input_queue.dequeue()
-
     out_labels = tf.expand_dims(input_list[1], 0)
+    inputs = tf.expand_dims(input_list[0], 0)
 
-    inputs = model.preprocess(input_list[0])
-    inputs = tf.expand_dims(inputs, 0)
+    inputs = model.preprocess(inputs)
+    model.provide_groundtruth(out_labels)
     output_dict = model.predict(inputs)
     outputs_map = output_dict['class_predictions']
 
-    val_labels = tf.expand_dims(input_dict[
-                    dataset_builder._LABEL_FIELD], 0)
-    model.provide_groundtruth(val_labels)
     val_losses = model.loss(output_dict)
-    main_loss = val_losses['loss']
+    total_loss = 0
+    for loss_val in val_losses.values():
+        total_loss += loss_val
 
     outputs_map = tf.image.resize_bilinear(outputs_map,
         size=(input_height, input_width),
@@ -82,7 +83,7 @@ def create_predictions_and_labels(model, create_input_dict_fn,
     out_outputs = tf.expand_dims(outputs, -1)
     out_images = tf.expand_dims(input_list[0], 0)
 
-    return out_outputs, out_labels, out_images, main_loss
+    return out_outputs, out_labels, out_images, total_loss
 
 
 def main(_):
