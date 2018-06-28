@@ -24,6 +24,9 @@ flags.DEFINE_string('logdir', '',
                     'set to `train_dir` used in the training job.')
 flags.mark_flag_as_required('logdir')
 
+flags.DEFINE_string('evaluate_all_from_checkpoint', '',
+                    '...')
+
 flags.DEFINE_string('eval_dir', '',
                     'Directory to write eval summaries to.')
 flags.mark_flag_as_required('eval_dir')
@@ -170,18 +173,43 @@ def main(_):
     max_number_of_evaluations = None
     if eval_config.max_evals:
         max_number_of_evaluations = eval_config.max_evals
-    main_metric = slim.evaluation.evaluation_loop(
-                    eval_op=eval_op,
-                    final_op=value_op,
-                    summary_op=summary_op,
-                    max_number_of_evaluations=max_number_of_evaluations,
-                    variables_to_restore=variables_to_restore,
-                    master='',
-                    checkpoint_dir=FLAGS.logdir,
-                    logdir=FLAGS.eval_dir,
-                    num_evals=eval_config.num_examples,
-                    eval_interval_secs=FLAGS.eval_interval_secs)
-    print('Evaluation over. Eval values: ', main_metric)
+
+    if FLAGS.evaluate_all_from_checkpoint:
+        checkpoints = tf.train.get_checkpoint_state(FLAGS.eval_dir)
+        all_checkpoints = ckpt.all_model_checkpoint_paths
+
+        checkpoints_to_evaluate = None
+        for idx, ckpt in enumurate(checkpoints):
+            if ckpt == FLAGS.FLAGS.evaluate_all_from_checkpoint:
+                checkpoints_to_evaluate = all_ckpt[idx:]
+                break
+        if checkpoints_to_evaluate is None:
+            raise ValueError('Checkpoint not found. Exiting.')
+
+        for checkpoint_path in checkpoints_to_evaluate:
+            main_metric = slim.evaluation.evaluate_once(master,
+                  checkpoint_path,
+                  FLAGS.eval_dir,
+                  num_evals=eval_config.num_examples,
+                  eval_op=eval_op,
+                  final_op=value_op,
+                  summary_op=summary_op,
+                  variables_to_restore=variables_to_restore)
+            print('Evaluation of `{}` over. Eval values: {}'.format(
+                checkpoint_path, main_metric))
+    else:
+        main_metric = slim.evaluation.evaluation_loop(
+                        eval_op=eval_op,
+                        final_op=value_op,
+                        summary_op=summary_op,
+                        max_number_of_evaluations=max_number_of_evaluations,
+                        variables_to_restore=variables_to_restore,
+                        master='',
+                        checkpoint_dir=FLAGS.logdir,
+                        logdir=FLAGS.eval_dir,
+                        num_evals=eval_config.num_examples,
+                        eval_interval_secs=FLAGS.eval_interval_secs)
+        print('Evaluation over. Eval values: ', main_metric)
 
 
 if __name__ == '__main__':
