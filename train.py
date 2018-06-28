@@ -74,6 +74,8 @@ flags.DEFINE_integer('save_every_n_hours', 999,
 
 flags.DEFINE_boolean('gradient_checkpointing', False, '')
 
+flags.DEFINE_boolean('show_memory', False, '')
+
 flags.DEFINE_boolean('test_image_summaries', False, '')
 
 flags.DEFINE_boolean('tmp_icnet_branch_summaries', False, 'temp flag')
@@ -379,13 +381,14 @@ def train_segmentation_model(create_model_fn,
                                         run_metadata=run_metadata)
             time_elapsed = time.time() - start_time
 
-            mem_use = mem_util.peak_memory(run_metadata)['/gpu:0']/1e6
-            print("Memory used: %.2f MB "%(mem_use))
-
             if 'should_log' in train_step_kwargs:
                 if sess.run(train_step_kwargs['should_log']):
                     logging.info('global step %d: loss = %.4f (%.3f sec/step)',
                         np_global_step, total_loss, time_elapsed)
+
+            if FLAGS.show_memory:
+                mem_use = mem_util.peak_memory(run_metadata)['/gpu:0']/1e6
+                logging.info('Memory used: %.2f MB',(mem_use))
 
             if 'should_stop' in train_step_kwargs:
                 should_stop = sess.run(train_step_kwargs['should_stop'])

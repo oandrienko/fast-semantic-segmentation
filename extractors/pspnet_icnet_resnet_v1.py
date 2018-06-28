@@ -44,8 +44,8 @@ class PSPNetICNetResnetV1FeatureExtractor(
     def _extract_features(self, preprocessed_inputs, scope):
         half_res_scope = scope + '/%s/block1' % self._architecture
         quarter_res_scope = scope + '/%s/block4' % self._architecture
-        psp_aux_scope = scope + '/%s/block3/unit_2/bottleneck_v1/conv3' \
-                                                % self._architecture
+        psp_aux_scope = scope + '/%s/block2' % self._architecture
+
         with slim.arg_scope(
             resnet_utils.resnet_arg_scope(
                 batch_norm_epsilon=1e-5,
