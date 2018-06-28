@@ -15,9 +15,9 @@ message ICNet {
 
     // Multi-branch loss fields
     optional Loss loss = 4;
-    optional float main_branch_loss_weight = 5;
-    optional float second_branch_loss_weight = 6;
-    optional float first_branch_loss_weight = 7;
+    optional float main_branch_loss_weight = 5 [default=1.0];
+    optional float second_branch_loss_weight = 6 [default=0.4];
+    optional float first_branch_loss_weight = 7 [default=0.4];
 
     // The filter compression factor when applying filter/channel pruning
     optional float filter_scale = 8;
