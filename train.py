@@ -1,9 +1,16 @@
 import functools
 import json
 import os
+import time
 import tensorflow as tf
+from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python.ops import gradients
 from google.protobuf import text_format
-from deployment import model_deploy
+
+# from deployment import model_deploy
+from third_party import model_deploy
+from third_party import memory_saving_gradients
+from third_party import mem_util
 
 from builders import model_builder
 from builders import dataset_builder
@@ -65,11 +72,21 @@ flags.DEFINE_integer('save_every_n_hours', 999,
 
 # Debug flag
 
-flags.DEFINE_boolean('test_image_summaries', False, 'Check inputs to network')
+flags.DEFINE_boolean('gradient_checkpointing', False, '')
+
+flags.DEFINE_boolean('test_image_summaries', False, '')
 
 flags.DEFINE_boolean('tmp_icnet_branch_summaries', False, 'temp flag')
 
 flags.DEFINE_boolean('tmp_psp_pretrain_summaries', False, 'temp flag')
+
+if FLAGS.gradient_checkpointing:
+    # monkey patch tf.gradients
+    def gradients_memory(ys, xs, grad_ys=None, **kwargs):
+        return memory_saving_gradients.gradients(
+            ys, xs, grad_ys, checkpoints='collection', **kwargs)
+    gradients.__dict__["gradients"] = gradients_memory
+
 
 
 def create_training_input(create_input_fn,
@@ -130,10 +147,13 @@ def create_training_model_losses(input_queue, create_model_fn, train_config):
     segmentation_model.provide_groundtruth(labels[0])
     prediction_dict = segmentation_model.predict(images)
 
-    # with tf.Session() as sess:
-    #     train_writer = tf.summary.FileWriter('./tmp')
-    #     train_writer.add_graph(sess.graph)
-    # import pdb; pdb.set_trace()
+    if FLAGS.gradient_checkpointing:
+        tf.logging.info('Adding gradient checkpoints to `checkpoints` collection')
+        graph = tf.get_default_graph()
+        checkpoint_list = segmentation_model.gradient_checkpointing_nodes()
+        for checkpoint_node_name in checkpoint_list:
+            node = graph.get_tensor_by_name(checkpoint_node_name)
+            tf.add_to_collection('checkpoints', node)
 
     # Gather main and aux losses here to single collection
     losses_dict = segmentation_model.loss(prediction_dict)
@@ -349,9 +369,35 @@ def train_segmentation_model(create_model_fn,
         else:
             tf.logging.info('Not initializing the model from a checkpoint.')
 
+        # HACK
+        def train_step_mem(sess, train_op, global_step, train_step_kwargs):
+            start_time = time.time()
+            run_metadata = tf.RunMetadata()
+            options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            total_loss, np_global_step = sess.run([train_op, global_step],
+                                        options=options,
+                                        run_metadata=run_metadata)
+            time_elapsed = time.time() - start_time
+
+            mem_use = mem_util.peak_memory(run_metadata)['/gpu:0']/1e6
+            print("Memory used: %.2f MB "%(mem_use))
+
+            if 'should_log' in train_step_kwargs:
+                if sess.run(train_step_kwargs['should_log']):
+                    logging.info('global step %d: loss = %.4f (%.3f sec/step)',
+                        np_global_step, total_loss, time_elapsed)
+
+            if 'should_stop' in train_step_kwargs:
+                should_stop = sess.run(train_step_kwargs['should_stop'])
+            else:
+                should_stop = False
+
+            return total_loss, should_stop
+
         # Main training loop
         slim.learning.train(
             train_op,
+            train_step_fn=train_step_mem,
             logdir=train_dir,
             master=master,
             is_chief=is_chief,

@@ -1,21 +1,8 @@
-# Custom
-tmp
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# dotenv
-.env
-
-# virtualenv
-.venv
-venv/
-ENV/
-
-# MacOS
 .DS_Store
-.AppleDouble
-.LSOverride
+.ipynb_checkpoints
+node_modules
+/pip_test
+/_python_build
+*.pyc
+__pycache__
+tmp
