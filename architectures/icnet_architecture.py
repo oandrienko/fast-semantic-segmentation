@@ -173,31 +173,58 @@ class ICNetArchitecture(model.FastSegmentationModel):
         """
         with tf.variable_scope('FastPSPModule'):
             _, input_h, input_w, _ = input_features.get_shape()
-            full_pool = slim.avg_pool2d(input_features, [input_h, input_w],
-                                stride=(input_h, input_w))
-            full_pool = tf.image.resize_bilinear(full_pool,
-                                size=(input_h, input_w),
-                                align_corners=True)
-            half_pool = slim.avg_pool2d(input_features,
-                                        [input_h/2, input_w/2],
-                                stride=(input_h/2, input_w/2))
-            half_pool = tf.image.resize_bilinear(half_pool,
-                                size=(input_h, input_w),
-                                align_corners=True)
-            third_pool = slim.avg_pool2d(input_features,
-                                        [input_h/3, input_w/3],
-                                stride=(input_h/3, input_w/3))
-            third_pool = tf.image.resize_bilinear(third_pool,
-                                size=(input_h, input_w),
-                                align_corners=True)
-            forth_pool = slim.avg_pool2d(input_features,
-                                        [input_h/6, input_w/6],
-                                stride=(input_h/6, input_w/6))
-            forth_pool = tf.image.resize_bilinear(forth_pool,
-                                size=(input_h, input_w),
-                                align_corners=True)
+            if True:
+                full_pool = slim.avg_pool2d(input_features, [input_h, input_w],
+                                    stride=(input_h, input_w))
+                full_pool = tf.image.resize_bilinear(full_pool,
+                                    size=(input_h, input_w),
+                                    align_corners=True)
+                half_pool = slim.avg_pool2d(input_features,
+                                            [input_h/2, input_w/2],
+                                    stride=(input_h/2, input_w/2))
+                half_pool = tf.image.resize_bilinear(half_pool,
+                                    size=(input_h, input_w),
+                                    align_corners=True)
+                third_pool = slim.avg_pool2d(input_features,
+                                            [input_h/3, input_w/3],
+                                    stride=(input_h/3, input_w/3))
+                third_pool = tf.image.resize_bilinear(third_pool,
+                                    size=(input_h, input_w),
+                                    align_corners=True)
+                forth_pool = slim.avg_pool2d(input_features,
+                                            [input_h/6, input_w/6],
+                                    stride=(input_h/6, input_w/6))
+                forth_pool = tf.image.resize_bilinear(forth_pool,
+                                    size=(input_h, input_w),
+                                    align_corners=True)
+            else:
+                import pdb; pdb.set_trace()
+                full_pool = slim.avg_pool2d(input_features,
+                                    [33, 65],
+                                    stride=(33, 65))
+                full_pool = tf.image.resize_bilinear(full_pool,
+                                    size=(input_h, input_w),
+                                    align_corners=True)
+                half_pool = slim.avg_pool2d(input_features,
+                                            [17, 33],
+                                    stride=(16, 32))
+                half_pool = tf.image.resize_bilinear(half_pool,
+                                    size=(input_h, input_w),
+                                    align_corners=True)
+                third_pool = slim.avg_pool2d(input_features,
+                                            [13, 25],
+                                    stride=(10, 20))
+                third_pool = tf.image.resize_bilinear(third_pool,
+                                    size=(input_h, input_w),
+                                    align_corners=True)
+                forth_pool = slim.avg_pool2d(input_features,
+                                            [8, 15],
+                                    stride=(5, 10))
+                forth_pool = tf.image.resize_bilinear(forth_pool,
+                                    size=(input_h, input_w),
+                                    align_corners=True)
             branch_merge = tf.add_n([input_features, full_pool,
-                                     half_pool, third_pool, forth_pool])
+                                         half_pool, third_pool, forth_pool])
             output = slim.conv2d(branch_merge, 512//self._filter_scale, [1, 1],
                                  stride=1, normalizer_fn=slim.batch_norm)
             return output
