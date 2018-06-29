@@ -175,19 +175,19 @@ def main(_):
         max_number_of_evaluations = eval_config.max_evals
 
     if FLAGS.evaluate_all_from_checkpoint:
-        checkpoints = tf.train.get_checkpoint_state(FLAGS.eval_dir)
-        all_checkpoints = ckpt.all_model_checkpoint_paths
-
+        checkpoints = tf.train.get_checkpoint_state(FLAGS.logdir)
+        all_checkpoints = checkpoints.all_model_checkpoint_paths
         checkpoints_to_evaluate = None
-        for idx, ckpt in enumurate(checkpoints):
-            if ckpt == FLAGS.FLAGS.evaluate_all_from_checkpoint:
-                checkpoints_to_evaluate = all_ckpt[idx:]
+        for idx, ckpt in enumerate(all_checkpoints):
+            print(idx, ' ', str(ckpt))
+            if str(ckpt) == FLAGS.evaluate_all_from_checkpoint:
+                checkpoints_to_evaluate = all_checkpoints[idx:]
                 break
         if checkpoints_to_evaluate is None:
             raise ValueError('Checkpoint not found. Exiting.')
-
         for checkpoint_path in checkpoints_to_evaluate:
-            main_metric = slim.evaluation.evaluate_once(master,
+            main_metric = slim.evaluation.evaluate_once(
+                  '',
                   checkpoint_path,
                   FLAGS.eval_dir,
                   num_evals=eval_config.num_examples,
