@@ -292,21 +292,21 @@ def train_segmentation_model(create_model_fn,
                 if first_clone_scope else '')
             main_in = graph.get_tensor_by_name(
                     '%sfifo_queue_Dequeue:1' % summ_first_clone_scope)
-            main_out = graph.get_tensor_by_name(
-                    '%sPredictions/Conv/BiasAdd:0' % summ_first_clone_scope)
             main_gt = graph.get_tensor_by_name(
                     '%sSegmentationLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
             summaries.add(
               tf.summary.image('VerifyTrainImageInput/Inputs', main_in))
-            main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
-            main_out = tf.cast(main_out * pixel_scaling, tf.uint8)
-            summaries.add(
-              tf.summary.image('VerifyTrainImageMain/Predictions', main_out))
             main_gt = tf.cast(main_gt * pixel_scaling, tf.uint8)
             summaries.add(
               tf.summary.image('VerifyTrainImageMain/Groundtruths', main_gt))
 
             if FLAGS.tmp_icnet_branch_summaries:
+                main_out = graph.get_tensor_by_name(
+                    '%sPredictions/Conv/BiasAdd:0' % summ_first_clone_scope)
+                main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
+                main_out = tf.cast(main_out * pixel_scaling, tf.uint8)
+                summaries.add(tf.summary.image('VerifyTrainImageMain/Predictions', main_out))
+
                 aux_out_0 = graph.get_tensor_by_name(
                         '%sCascadeFeatureFusion_0/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
                 aux_gt_0 = graph.get_tensor_by_name(
@@ -332,6 +332,12 @@ def train_segmentation_model(create_model_fn,
                   tf.summary.image('VerifyTrainImageSecondBranchAux/Groundtruths', aux_gt_1))
 
             if FLAGS.tmp_psp_pretrain_summaries:
+                main_out = graph.get_tensor_by_name(
+                    '%sPredictions/PretrainConv/BiasAdd:0' % summ_first_clone_scope)
+                main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
+                main_out = tf.cast(main_out * pixel_scaling, tf.uint8)
+                summaries.add(tf.summary.image('VerifyTrainImageMain/Predictions', main_out)
+
                 aux_out = graph.get_tensor_by_name(
                         '%sAuxPredictions/Conv/BiasAdd:0' % summ_first_clone_scope)
                 aux_gt = graph.get_tensor_by_name(
@@ -362,6 +368,7 @@ def train_segmentation_model(create_model_fn,
         saver = tf.train.Saver(max_to_keep=max_checkpoints_to_keep)
 
         init_fn = None
+        init_op = tf.global_variables_initializer()
         if train_config.fine_tune_checkpoint:
             if not train_config.fine_tune_checkpoint_type:
                 raise ValueError('Must specify `fine_tune_checkpoint_type`.')
@@ -373,10 +380,17 @@ def train_segmentation_model(create_model_fn,
             variables_to_restore = segmentation_model.restore_map(
               fine_tune_checkpoint_type=train_config.fine_tune_checkpoint_type)
 
-            init_fn = slim.assign_from_checkpoint_fn(
-                train_config.fine_tune_checkpoint,
-                variables_to_restore,
-                ignore_missing_vars=True)
+            # g = tf.get_default_graph()
+            # target_t = g.get_tensor_by_name('')
+            # src_t = g.get_tensor_by_name('')
+            # assign_op = tf.assign(target_t, src_t)
+            # with tf.control_dependencies([assign_op]):
+            #     init_op = tf.identity(init_op)
+            #
+            # init_fn = slim.assign_from_checkpoint_fn(
+            #     train_config.fine_tune_checkpoint,
+            #     variables_to_restore,
+            #     ignore_missing_vars=True)
         else:
             tf.logging.info('Not initializing the model from a checkpoint.')
 
@@ -390,7 +404,6 @@ def train_segmentation_model(create_model_fn,
                                         options=options,
                                         run_metadata=run_metadata)
             time_elapsed = time.time() - start_time
-
             if 'should_log' in train_step_kwargs:
                 if sess.run(train_step_kwargs['should_log']):
                     logging.info('global step %d: loss = %.4f (%.3f sec/step)',
@@ -418,6 +431,7 @@ def train_segmentation_model(create_model_fn,
             number_of_steps=train_config.num_steps,
             startup_delay_steps=startup_delay_steps,
             init_fn=init_fn,
+            init_op=init_op,
             summary_op=summary_op,
             save_summaries_secs=120,
             save_interval_secs=save_interval_secs,

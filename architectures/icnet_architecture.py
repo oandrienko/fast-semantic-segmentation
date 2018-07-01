@@ -134,8 +134,11 @@ class ICNetArchitecture(model.FastSegmentationModel):
 
             # Class class_predictions
             with tf.variable_scope('Predictions'):
+                output_name_scope = (''
+                    if self._pretrain_single_branch_mode else 'PretrainConv')
                 predictions = slim.conv2d(final_logits, self._num_classes,
-                                1, 1, activation_fn=None, normalizer_fn=None)
+                                1, 1, activation_fn=None, normalizer_fn=None,
+                                scope=output_name_scope)
                 if not self._is_training: # evaluation output
                     output_zoom_factor = (8
                         if self._pretrain_single_branch_mode else 4)
@@ -360,7 +363,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
         if fine_tune_checkpoint_type == 'segmentation-finetune':
             tf.logging.info('Fine-tuning from PSPNet based checkpoint.')
 
-        if fine_tune_checkpoint_type == 'segmentation':
+        if fine_tune_checkpoint_type == 'segmentation-finetune':
             variables_to_restore.append(slim.get_or_create_global_step())
 
         return variables_to_restore
