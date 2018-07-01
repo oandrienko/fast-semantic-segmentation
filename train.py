@@ -19,7 +19,6 @@ from builders import optimizer_builder
 from protos import pipeline_pb2
 
 
-
 tf.logging.set_verbosity(tf.logging.INFO)
 
 slim = tf.contrib.slim
@@ -68,8 +67,11 @@ flags.DEFINE_string('logdir', '',
                     'Directory to save the checkpoints and training summaries.')
 flags.mark_flag_as_required('logdir')
 
-flags.DEFINE_integer('save_every_n_hours', 999,
-                     'Time between successive saves of a checkpoint')
+flags.DEFINE_integer('save_interval_secs', 600, # default to 5 min
+                     'Time between successive saves of a checkpoint in secs.')
+
+flags.DEFINE_integer('max_checkpoints_to_keep', 50, # might want to cut this down
+                     'Number of checkpoints to keep in the `logdir`.')
 
 # Debug flag
 
@@ -84,6 +86,7 @@ flags.DEFINE_boolean('tmp_icnet_branch_summaries', False, 'temp flag')
 flags.DEFINE_boolean('tmp_psp_pretrain_summaries', False, 'temp flag')
 
 
+
 #################### TEMP, TO FIT FOR TRAINING ######################
 
  # Monkey patch tf.gradients
@@ -94,6 +97,7 @@ if FLAGS.gradient_checkpointing:
     gradients.__dict__["gradients"] = gradients_memory
 
 ######################################################################
+
 
 
 def create_training_input(create_input_fn,
@@ -182,7 +186,8 @@ def train_segmentation_model(create_model_fn,
                              clone_on_cpu,
                              replica_id,
                              num_replicas,
-                             save_every_n_hours,
+                             max_checkpoints_to_keep,
+                             save_interval_secs,
                              image_summaries):
     """Create an instance of the FastSegmentationModel"""
     _, segmentation_model = create_model_fn()
@@ -354,9 +359,7 @@ def train_segmentation_model(create_model_fn,
             allow_soft_placement=True, log_device_placement=True)
 
         # Save checkpoints regularly.
-        keep_checkpoint_every_n_hours = save_every_n_hours
-        saver = tf.train.Saver(
-                  keep_checkpoint_every_n_hours=keep_checkpoint_every_n_hours)
+        saver = tf.train.Saver(max_to_keep=max_checkpoints_to_keep)
 
         init_fn = None
         if train_config.fine_tune_checkpoint:
@@ -417,6 +420,7 @@ def train_segmentation_model(create_model_fn,
             init_fn=init_fn,
             summary_op=summary_op,
             save_summaries_secs=120,
+            save_interval_secs=save_interval_secs,
             saver=saver)
 
 
@@ -457,7 +461,8 @@ def main(_):
         replica_id=FLAGS.task,
         num_replicas=FLAGS.num_replicas,
         num_ps_tasks=FLAGS.num_ps_tasks,
-        save_every_n_hours=FLAGS.save_every_n_hours,
+        max_checkpoints_to_keep=FLAGS.max_checkpoints_to_keep,
+        save_interval_secs=FLAGS.save_interval_secs,
         image_summaries=FLAGS.test_image_summaries)
 
 
