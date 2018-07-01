@@ -270,7 +270,7 @@ def train_segmentation_model(create_model_fn,
             if not train_config.fine_tune_checkpoint_type:
                 raise ValueError('Must specify `fine_tune_checkpoint_type`.')
 
-            tf.logging.info('Initializing %s model from path: %s',
+            tf.logging.info('Initializing %s model from checkpoint %s',
                 train_config.fine_tune_checkpoint_type,
                 train_config.fine_tune_checkpoint)
 
@@ -283,14 +283,17 @@ def train_segmentation_model(create_model_fn,
                         ignore_missing_vars=True)
 
             if train_config.freeze_fine_tune_backbone:
+                tf.logging.info('Freezing %s scope from checkpoint.')
                 non_frozen_vars = []
                 for var in trainable_vars:
                     if not var.op.name.startswith(
                       segmentation_model.shared_feature_extractor_scope):
                         non_frozen_vars.append(var)
+                        tf.logging.info('Training variable: %s', var.op.name)
                 trainable_vars = non_frozen_vars
         else:
-            tf.logging.info('Not initializing the model from a checkpoint.')
+            tf.logging.info('Not initializing the model from a checkpoint. '
+                            'Initializing from scratch!')
 
         # TODO(@oandrien): we might want to add gradient multiplier here
         # for the last layer if we have trouble with training
