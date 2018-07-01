@@ -349,12 +349,17 @@ class ICNetArchitecture(model.FastSegmentationModel):
                              'fine_tune_checkpoint_type: {}'.format(
                              fine_tune_checkpoint_type))
         if fine_tune_checkpoint_type == 'classification':
+            tf.logging.info('Fine-tuning from classification checkpoints.')
             return self._feature_extractor.restore_from_classif_checkpoint_fn(
                 self.shared_feature_extractor_scope)
 
         exclude_list = ['global_step']
         variables_to_restore = slim.get_variables_to_restore(
                                         exclude=exclude_list)
+
+        if fine_tune_checkpoint_type == 'segmentation-finetune':
+            tf.logging.info('Fine-tuning from PSPNet based checkpoint.')
+
         if fine_tune_checkpoint_type == 'segmentation':
             variables_to_restore.append(slim.get_or_create_global_step())
 
