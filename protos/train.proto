@@ -15,11 +15,12 @@ message TrainConfig {
     // 'segmentation'. Typically used to load feature extractor
     // variables from trained models.
     optional string fine_tune_checkpoint_type = 6 [default=""];
-    optional uint32 num_steps = 7 [default=0]; // If 0, then train forever.
-    optional int32 batch_queue_capacity = 8 [default=150];
-    optional int32 num_batch_queue_threads = 9 [default=8];
-    optional int32 prefetch_queue_capacity = 10 [default=5];
-    optional bool add_regularization_loss = 11 [default=true];
-    optional int32 quantize_with_delay = 12;
-    optional int32 num_queue_threads = 13 [default=8];
+    optional bool freeze_fine_tune_backbone = 7 [default=false];
+    optional uint32 num_steps = 8 [default=0]; // If 0, then train forever.
+    optional int32 batch_queue_capacity = 9 [default=150];
+    optional int32 num_batch_queue_threads = 10 [default=8];
+    optional int32 prefetch_queue_capacity = 11 [default=5];
+    optional bool add_regularization_loss = 12 [default=true];
+    optional int32 quantize_with_delay = 13;
+    optional int32 num_queue_threads = 14 [default=8];
 }
