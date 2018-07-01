@@ -183,6 +183,7 @@ def eval_segmentation_model(create_model_fn,
     tf.logging.info('Evaluating over %d samples...',
                     eval_config.num_examples)
 
+    total_eval_examples = eval_config.num_examples
     if evaluate_all_from_checkpoint is not None:
         checkpoints_to_evaluate = get_checkpoints_from_path(
             evaluate_all_from_checkpoint, train_dir)
@@ -192,14 +193,14 @@ def eval_segmentation_model(create_model_fn,
                                 master='',
                                 checkpoint_path=curr_checkpoint,
                                 logdir=eval_dir,
+                                num_evals=total_eval_examples,
                                 eval_op=eval_op,
                                 final_op=value_op,
                                 summary_op=summary_op,
                                 variables_to_restore=variables_to_restore)
             tf.logging.info('Evaluation of `{}` over. Eval values: {}'.format(
-                        checkpoint_path, metric_results))
+                        curr_checkpoint, metric_results))
     else:
-        total_eval_examples = eval_config.num_examples
         metric_results = slim.evaluation.evaluation_loop(
                             master='',
                             checkpoint_dir=train_dir,
@@ -210,7 +211,7 @@ def eval_segmentation_model(create_model_fn,
                             summary_op=summary_op,
                             variables_to_restore=variables_to_restore)
         tf.logging.info('Evaluation over. Eval values: {}'.format(
-                        checkpoint_path, metric_results))
+                        metric_results))
 
 
 def main(_):
