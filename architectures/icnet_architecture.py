@@ -134,8 +134,8 @@ class ICNetArchitecture(model.FastSegmentationModel):
 
             # Class class_predictions
             with tf.variable_scope('Predictions'):
-                output_name_scope = (''
-                    if self._pretrain_single_branch_mode else 'PretrainConv')
+                output_name_scope = ('pretrain'
+                    if self._pretrain_single_branch_mode else 'postrain')
                 predictions = slim.conv2d(final_logits, self._num_classes,
                                 1, 1, activation_fn=None, normalizer_fn=None,
                                 scope=output_name_scope)

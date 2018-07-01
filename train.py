@@ -264,7 +264,8 @@ def train_segmentation_model(create_model_fn,
             summaries.add(tf.summary.histogram(model_var.op.name, model_var))
 
         # Fine tune from classification or segmentation checkpoints
-        trainable_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+        trainable_vars = tf.get_collection(
+                              tf.GraphKeys.TRAINABLE_VARIABLES)
         if train_config.fine_tune_checkpoint:
             if not train_config.fine_tune_checkpoint_type:
                 raise ValueError('Must specify `fine_tune_checkpoint_type`.')
@@ -284,9 +285,9 @@ def train_segmentation_model(create_model_fn,
             if train_config.freeze_fine_tune_backbone:
                 non_frozen_vars = []
                 for var in trainable_vars:
-                    if var.op.name not in variables_to_restore.values():
-                        non_frozen_vars.append()
-                import pdb; pdb.set_trace()
+                    if not var.op.name.startswith(
+                      segmentation_model.shared_feature_extractor_scope):
+                        non_frozen_vars.append(var)
                 trainable_vars = non_frozen_vars
         else:
             tf.logging.info('Not initializing the model from a checkpoint.')
@@ -298,7 +299,8 @@ def train_segmentation_model(create_model_fn,
                                else [])
             total_loss, grads_and_vars = model_deploy.optimize_clones(
                 clones, training_optimizer,
-                regularization_losses=reg_losses)
+                regularization_losses=reg_losses,
+                var_list=trainable_vars)
             total_loss = tf.check_numerics(total_loss,
                                           'LossTensor is inf or nan.')
             summaries.add(
@@ -433,7 +435,6 @@ def train_segmentation_model(create_model_fn,
             number_of_steps=train_config.num_steps,
             startup_delay_steps=startup_delay_steps,
             init_fn=init_fn,
-            init_op=init_op,
             summary_op=summary_op,
             save_summaries_secs=120,
             save_interval_secs=save_interval_secs,
