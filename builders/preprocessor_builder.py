@@ -174,12 +174,11 @@ def random_scale(images,
                  labels,
                  min_scale_ratio=0.5,
                  max_scale_ratio=2.0,
+                 pad_to_dims=None,
                  seed=_RANDOM_PREPROCESSOR_SEED,
                  preprocess_vars_cache=None):
     with tf.name_scope('RandomScale', values=[images, labels]):
-        shape = tf.shape(images)
-        image_height = shape[0]
-        image_width = shape[1]
+        image_height, image_width, _ = images.get_shape().as_list()
 
         generator_func = functools.partial(
             tf.random_uniform, [],
@@ -202,6 +201,16 @@ def random_scale(images,
                                 images, new_shape, align_corners=True)
         scaled_labels = tf.image.resize_nearest_neighbor(
                                 labels, new_shape, align_corners=True)
+        if pad_to_dims is not None:
+            crop_height, crop_width = pad_to_dims
+            target_height = (image_newysize +
+                                tf.maximum(crop_height - image_newysize, 0))
+            target_width = (image_newxsize +
+                                tf.maximum(crop_width - image_newxsize, 0))
+            scaled_images = tf.image.pad_to_bounding_box(
+                scaled_images, 0, 0, target_height, target_width)
+            scaled_labels = tf.image.pad_to_bounding_box(
+                scaled_labels, 0, 0, target_height, target_width)
         output_images = tf.squeeze(scaled_images, [0])
         output_labels = tf.squeeze(scaled_labels, [0])
         return output_images, output_labels
@@ -219,7 +228,9 @@ def random_crop(images, labels,
         return out_inputs
 
     with tf.name_scope('RandomCropImage', values=[images, labels]):
-        images_height, images_width, _ = images.get_shape()
+        images_shape = tf.shape(images)
+        images_height = images_shape[0]
+        images_width = images_shape[1]
 
         max_offset_height = tf.reshape(images_height-crop_height+1, [])
         max_offset_width = tf.reshape(images_width-crop_width+1, [])
@@ -352,8 +363,16 @@ def build(preprocessor_config_list):
             if not (config.max_scale_ratio >= config.min_scale_ratio):
                 raise ValueError('min_scale_ratio > max_scale_ratio')
 
+            pad_to_dims = None
+            for cfg in preprocessor_config_list:
+                step_t = cfg.WhichOneof('preprocessing_step')
+                if step_t == 'random_image_crop':
+                    dim = cfg.random_image_crop
+                    pad_to_dims = (dim.crop_height, dim.crop_width)
+
             image_scale_fn = functools.partial(
                 random_scale,
+                pad_to_dims=pad_to_dims,
                 min_scale_ratio=config.min_scale_ratio,
                 max_scale_ratio=config.max_scale_ratio)
             proprocessor_func_list.append(image_scale_fn)

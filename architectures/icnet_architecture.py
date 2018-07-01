@@ -88,6 +88,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
     def pretrain_single_branch_mode_loss_key(self):
         return 'pretrain_single_branch_mode_loss'
 
+    # TODO: remove this... checkpointing should be temporary
     def gradient_checkpointing_nodes(self):
         return [
             'SharedFeatureExtractor/resnet_v1_50/block1/unit_3/bottleneck_v1/Relu:0',
@@ -202,7 +203,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
             else:
                 import pdb; pdb.set_trace()
                 full_pool = slim.avg_pool2d(input_features,
-                                    [33, 65],
+                                           [33, 65],
                                     stride=(33, 65))
                 full_pool = tf.image.resize_bilinear(full_pool,
                                     size=(input_h, input_w),

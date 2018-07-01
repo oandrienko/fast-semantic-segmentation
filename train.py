@@ -19,17 +19,6 @@ from builders import optimizer_builder
 from protos import pipeline_pb2
 
 
-#################### TEMP, TO FIT FOR TRAINING ######################
-
- # Monkey patch tf.gradients
-if FLAGS.gradient_checkpointing:
-    def gradients_memory(ys, xs, grad_ys=None, **kwargs):
-        return memory_saving_gradients.gradients(
-            ys, xs, grad_ys, checkpoints='collection', **kwargs)
-    gradients.__dict__["gradients"] = gradients_memory
-
-######################################################################
-
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -93,6 +82,18 @@ flags.DEFINE_boolean('test_image_summaries', False, '')
 flags.DEFINE_boolean('tmp_icnet_branch_summaries', False, 'temp flag')
 
 flags.DEFINE_boolean('tmp_psp_pretrain_summaries', False, 'temp flag')
+
+
+#################### TEMP, TO FIT FOR TRAINING ######################
+
+ # Monkey patch tf.gradients
+if FLAGS.gradient_checkpointing:
+    def gradients_memory(ys, xs, grad_ys=None, **kwargs):
+        return memory_saving_gradients.gradients(
+            ys, xs, grad_ys, checkpoints='collection', **kwargs)
+    gradients.__dict__["gradients"] = gradients_memory
+
+######################################################################
 
 
 def create_training_input(create_input_fn,
