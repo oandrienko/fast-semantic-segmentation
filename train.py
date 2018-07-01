@@ -335,7 +335,7 @@ def train_segmentation_model(create_model_fn,
 
             if FLAGS.tmp_icnet_branch_summaries:
                 main_out = graph.get_tensor_by_name(
-                    '%sPredictions/Conv/BiasAdd:0' % summ_first_clone_scope)
+                    '%sPredictions/postrain/BiasAdd:0' % summ_first_clone_scope)
                 main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
                 main_out = tf.cast(main_out * pixel_scaling, tf.uint8)
                 summaries.add(tf.summary.image('VerifyTrainImageMain/Predictions', main_out))
@@ -366,7 +366,7 @@ def train_segmentation_model(create_model_fn,
 
             if FLAGS.tmp_psp_pretrain_summaries:
                 main_out = graph.get_tensor_by_name(
-                    '%sPredictions/PretrainConv/BiasAdd:0' % summ_first_clone_scope)
+                    '%sPredictions/pretrain/BiasAdd:0' % summ_first_clone_scope)
                 main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
                 main_out = tf.cast(main_out * pixel_scaling, tf.uint8)
                 summaries.add(tf.summary.image('VerifyTrainImageMain/Predictions', main_out))
