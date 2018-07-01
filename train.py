@@ -19,6 +19,18 @@ from builders import optimizer_builder
 from protos import pipeline_pb2
 
 
+#################### TEMP, TO FIT FOR TRAINING ######################
+
+ # Monkey patch tf.gradients
+if FLAGS.gradient_checkpointing:
+    def gradients_memory(ys, xs, grad_ys=None, **kwargs):
+        return memory_saving_gradients.gradients(
+            ys, xs, grad_ys, checkpoints='collection', **kwargs)
+    gradients.__dict__["gradients"] = gradients_memory
+
+######################################################################
+
+
 tf.logging.set_verbosity(tf.logging.INFO)
 
 slim = tf.contrib.slim
@@ -81,14 +93,6 @@ flags.DEFINE_boolean('test_image_summaries', False, '')
 flags.DEFINE_boolean('tmp_icnet_branch_summaries', False, 'temp flag')
 
 flags.DEFINE_boolean('tmp_psp_pretrain_summaries', False, 'temp flag')
-
-if FLAGS.gradient_checkpointing:
-    # monkey patch tf.gradients
-    def gradients_memory(ys, xs, grad_ys=None, **kwargs):
-        return memory_saving_gradients.gradients(
-            ys, xs, grad_ys, checkpoints='collection', **kwargs)
-    gradients.__dict__["gradients"] = gradients_memory
-
 
 
 def create_training_input(create_input_fn,
@@ -273,7 +277,7 @@ def train_segmentation_model(create_model_fn,
             with tf.control_dependencies([update_op]):
                 train_op = tf.identity(total_loss, name='train_op')
 
-        ##############################################################################################################
+##############################################################################################################
         # TEMPORARY...
         if image_summaries:
             graph = tf.get_default_graph()
@@ -333,7 +337,8 @@ def train_segmentation_model(create_model_fn,
                 aux_gt = tf.cast(aux_gt * pixel_scaling, tf.uint8)
                 summaries.add(
                   tf.summary.image('VerifyTrainImagePretrainMainAux/Groundtruths', aux_gt))
-        ##############################################################################################################
+
+##############################################################################################################
 
 
         # Add the summaries from the first clone. These contain the summaries
@@ -371,7 +376,8 @@ def train_segmentation_model(create_model_fn,
         else:
             tf.logging.info('Not initializing the model from a checkpoint.')
 
-        # HACK
+        # HACK to see memory usage.
+        # TODO: Clean up, pretty messy.
         def train_step_mem(sess, train_op, global_step, train_step_kwargs):
             start_time = time.time()
             run_metadata = tf.RunMetadata()

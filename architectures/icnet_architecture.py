@@ -135,9 +135,11 @@ class ICNetArchitecture(model.FastSegmentationModel):
             with tf.variable_scope('Predictions'):
                 predictions = slim.conv2d(final_logits, self._num_classes,
                                 1, 1, activation_fn=None, normalizer_fn=None)
-                if not self._is_training: # evaluation
+                if not self._is_training: # evaluation output
+                    output_zoom_factor = (8
+                        if self._pretrain_single_branch_mode else 4)
                     predictions = self._dynamic_interpolation(predictions,
-                                                              z_factor=4)
+                                            z_factor=output_zoom_factor)
             # Main output used in both pretrain and regular train mode
             prediction_dict = {
                 self.main_class_predictions_key: predictions}

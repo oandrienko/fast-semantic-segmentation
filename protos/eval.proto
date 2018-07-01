@@ -3,13 +3,24 @@ syntax = "proto2";
 package fast_semantic_segmentation.protos;
 
 message EvalConfig {
-    optional uint32 num_visualizations = 1 [default=10];
-    optional uint32 num_examples = 2 [default=5000];
-    optional uint32 ignore_label = 3 [default=255];
-    optional uint32 eval_interval_secs = 4 [default=300];
-    optional uint32 max_evals = 5 [default=0];
-    optional string visualization_export_dir = 6 [default=""];
-    optional bool visualize_groundtruth = 7 [default=false];
-    optional uint32 crop_height = 8 [default=1025];
-    optional uint32 crop_width = 9 [default=2049];
+    optional uint32 num_examples = 1 [default=5000];
+    optional uint32 ignore_label = 2 [default=255];
+    optional EvalInputType eval_input_type = 3;
+}
+
+message EvalInputType {
+  oneof eval_input_type_oneof {
+    CroppedEvalInput cropped_eval_input = 1;
+    PaddedEvalInput padded_eval_input = 2;
+  }
+}
+
+message CroppedEvalInput {
+  optional int32 height = 1;
+  optional int32 width = 2;
+}
+
+message PaddedEvalInput {
+  optional int32 height = 1;
+  optional int32 width = 2;
 }

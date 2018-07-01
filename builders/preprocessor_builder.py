@@ -41,8 +41,9 @@ def set_fixed_image_size(images,
                          height_to_set,
                          width_to_set,
                          images_channel_dim=3,
-                         labels_channel_dim=1):
-    with tf.name_scope('DimensionInput', values=[image, min_dimension]):
+                         labels_channel_dim=1,
+                         preprocess_vars_cache=None):
+    with tf.name_scope('DimensionInput', values=[images, labels]):
         fixed_input_tensor_shape = (
             height_to_set, width_to_set, images_channel_dim)
         images.set_shape(fixed_input_tensor_shape)
@@ -50,6 +51,26 @@ def set_fixed_image_size(images,
             height_to_set, width_to_set, labels_channel_dim)
         labels.set_shape(fixed_label_tensor_shape)
         return images, labels
+
+def pad_to_specific_size(images,
+                         labels,
+                         height_to_set,
+                         width_to_set,
+                         images_channel_dim=3,
+                         labels_channel_dim=1,
+                         preprocess_vars_cache=None):
+    with tf.name_scope('PadInput', values=[images, labels]):
+        fixed_input_tensor_shape = (
+            height_to_set, width_to_set, images_channel_dim)
+        padded_images = tf.image.pad_to_bounding_box(
+                            images, 0, 0, height_to_set, width_to_set)
+        padded_images.set_shape(fixed_input_tensor_shape)
+        fixed_label_tensor_shape = (
+            height_to_set, width_to_set, labels_channel_dim)
+        padded_labels = tf.image.pad_to_bounding_box(
+                            labels, 0, 0, height_to_set, width_to_set)
+        padded_labels.set_shape(fixed_label_tensor_shape)
+        return padded_images, padded_labels
 
 
 def _compute_new_static_size(image, min_dimension, max_dimension):
@@ -188,8 +209,8 @@ def random_scale(images,
 
 def random_crop(images, labels,
                 crop_height, crop_width,
-                images_channel_dim,
-                labels_channel_dim,
+                images_channel_dim=3,
+                labels_channel_dim=1,
                 preprocess_vars_cache=None):
 
     def _apply_random_crop(inputs, offsets, crop_shape):
@@ -198,9 +219,7 @@ def random_crop(images, labels,
         return out_inputs
 
     with tf.name_scope('RandomCropImage', values=[images, labels]):
-        images_shape = tf.shape(images)
-        images_height = images_shape[0]
-        images_width = images_shape[1]
+        images_height, images_width, _ = images.get_shape()
 
         max_offset_height = tf.reshape(images_height-crop_height+1, [])
         max_offset_width = tf.reshape(images_width-crop_width+1, [])
@@ -233,8 +252,11 @@ def random_crop(images, labels,
         # Must set shape here or in the set shape preprocessor step
         # when dealing with ICNet
         if images_channel_dim and labels_channel_dim:
-            cropped_images.set_shape((crop_height, crop_width, images_channel_dim))
-            cropped_labels.set_shape((crop_height, crop_width, labels_channel_dim))
+            cropped_images.set_shape((crop_height, crop_width,
+                                     images_channel_dim))
+            cropped_labels.set_shape((crop_height, crop_width,
+                                     labels_channel_dim))
+
         return cropped_images, cropped_labels
 
 
@@ -277,20 +299,20 @@ def preprocess_runner(tensor_dict, func_list, preprocess_vars_cache=None):
     if preprocess_vars_cache is None:
         preprocess_vars_cache = {}
 
-    images = tensor_dict[dataset_builder._IMAGE_FIELD]
-    labels = tensor_dict[dataset_builder._LABEL_FIELD]
+    images = tf.to_float(tensor_dict[dataset_builder._IMAGE_FIELD])
+    labels = tf.to_float(tensor_dict[dataset_builder._LABEL_FIELD])
     images_shape = tf.shape(images)
     labels_shape = tf.shape(labels)
     shape_assert = tf.Assert(
         tf.equal(images_shape, labels_shape),
         ["Label and Image shape must match"])
-
     for preprocessor_step_func in func_list:
         images, labels = preprocessor_step_func(images=images, labels=labels,
                         preprocess_vars_cache=preprocess_vars_cache)
 
     tensor_dict[dataset_builder._IMAGE_FIELD] = images
     tensor_dict[dataset_builder._LABEL_FIELD] = labels
+
     return tensor_dict
 
 

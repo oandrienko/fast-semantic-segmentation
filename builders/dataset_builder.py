@@ -49,10 +49,12 @@ def _create_tf_example_decoder():
     input_image = tfexample_decoder.Image(
         image_key='image/encoded',
         format_key='image/format',
+        shape=(1024, 2048, 3), # CITYSCAPES SPECIFIC
         channels=3)
     ground_truth_image = tfexample_decoder.Image(
         image_key='image/segmentation/class/encoded',
         format_key='image/segmentation/class/format',
+        shape=(1024, 2048, 1), # CITYSCAPES SPECIFIC
         channels=1)
 
     items_to_handlers = {
