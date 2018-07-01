@@ -34,10 +34,6 @@ class PSPNetArchitecture(model.FastSegmentationModel):
         self._add_summaries = add_summaries
 
     @property
-    def shared_feature_extractor_scope(self):
-        return 'SharedFeatureExtractor'
-
-    @property
     def main_class_predictions_key(self):
         return 'class_predictions'
 

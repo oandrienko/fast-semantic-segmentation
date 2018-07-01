@@ -28,6 +28,10 @@ class FastSegmentationModel(object):
         self._groundtruth_labels = {}
 
     @property
+    def shared_feature_extractor_scope(self):
+        return 'SharedFeatureExtractor'
+
+    @property
     def num_classes(self):
         return self._num_classes
 
