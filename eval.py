@@ -92,7 +92,8 @@ def create_evaluation_input(create_input_dict_fn,
 
 
 def create_predictions_and_labels(model, create_input_dict_fn,
-                                 input_height, input_width, cropped_eval):
+                                 input_height, input_width, cropped_eval,
+                                 eval_dir=None):
     eval_input_pair = create_evaluation_input(
         create_input_dict_fn, input_height, input_width, cropped_eval)
     # Setup a queue for feeding to slim evaluation helpers
@@ -104,6 +105,12 @@ def create_predictions_and_labels(model, create_input_dict_fn,
     mean_subtracted_inputs = model.preprocess(eval_images)
     model.provide_groundtruth(eval_labels)
     output_dict = model.predict(mean_subtracted_inputs)
+    # Output graph def for pruning
+    if eval_dir is not None:
+        pred_graph_def_path = os.path.join(eval_dir, "prediction_graph.pbtxt")
+        f = tf.gfile.FastGFile(pred_graph_def_path, "wb")
+        graph_def = tf.get_default_graph().as_graph_def()
+        f.write(graph_def.SerializeToString())
     # Validation loss to fight overfitting
     validation_losses = model.loss(output_dict)
     eval_total_loss =  sum(validation_losses.values())
@@ -134,7 +141,8 @@ def eval_segmentation_model(create_model_fn,
                 create_input_dict_fn=create_input_fn,
                 input_height=input_height,
                 input_width=input_width,
-                cropped_eval=cropped_evaluation)
+                cropped_eval=cropped_evaluation,
+                eval_dir=eval_dir)
     variables_to_restore = tf.global_variables()
     global_step = tf.train.get_or_create_global_step()
     variables_to_restore.append(global_step)

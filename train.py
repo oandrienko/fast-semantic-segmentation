@@ -131,7 +131,8 @@ def create_training_input(create_input_fn,
         dynamic_pad=False)
 
 
-def create_training_model_losses(input_queue, create_model_fn, train_config):
+def create_training_model_losses(input_queue, create_model_fn, train_config,
+                                 train_dir=None):
 
     _, segmentation_model = create_model_fn()
 
@@ -227,7 +228,8 @@ def train_segmentation_model(create_model_fn,
             # is collected at the tf.GraphKeys.LOSSES collection.
             model_fn = functools.partial(create_training_model_losses,
                                     create_model_fn=create_model_fn,
-                                    train_config=train_config)
+                                    train_config=train_config,
+                                    train_dir=train_dir)
             clones = model_deploy.create_clones(deploy_config,
                 model_fn, [input_queue])
             first_clone_scope = deploy_config.clone_scope(0)
