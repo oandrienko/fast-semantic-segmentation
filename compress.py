@@ -81,6 +81,7 @@ def main(unused_args):
     skippable_nodes = FLAGS.skippable_nodes.replace(" ", "").split(",")
     compression_fn = functools.partial(
         compressor_builder.build,
+        compression_factor=FLAGS.compression_factor,
         skippable_nodes=skippable_nodes,
         compression_config=compression_strategy_config)
 

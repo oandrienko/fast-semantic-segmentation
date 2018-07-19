@@ -11,10 +11,11 @@ def _complete_node_scope(name, parent_scope, overide_scope=None):
     main_scope = overide_scope if overide_scope is not None else parent_scope
     return os.path.join(main_scope, name)
 
-def _build_filter_pruning_compressor(filter_pruning_config, skippable_nodes):
+def _build_filter_pruning_compressor(filter_pruning_config, skippable_nodes,
+                                     compression_factor):
     input_node_name = filter_pruning_config.input.name
     output_node_name = filter_pruning_config.output.name
-    compression_factor = filter_pruning_config.compression_factor
+    # compression_factor = filter_pruning_config.compression_factor
     # Get prespecified pruner specs for complex nodes pruning schemes
     pruner_specs = {}
     nonoveride_complete_scope = functools.partial(
@@ -45,7 +46,7 @@ def _build_filter_pruning_compressor(filter_pruning_config, skippable_nodes):
     return pruner
 
 
-def build(compression_config, skippable_nodes):
+def build(compression_config, skippable_nodes, compression_factor):
     if not isinstance(compression_config, compressor_pb2.CompressionStrategy):
         raise ValueError('pruner_config not of type '
                          'compressor_pb2.CompressionStrategy.')
@@ -53,7 +54,8 @@ def build(compression_config, skippable_nodes):
     if compression_strategy == 'filter_pruner':
         return _build_filter_pruning_compressor(
                     compression_config.filter_pruner,
-                    skippable_nodes)
+                    skippable_nodes,
+                    compression_factor)
 
     raise ValueError('Unknown compression strategy: {}'.format(
         compression_strategy))
