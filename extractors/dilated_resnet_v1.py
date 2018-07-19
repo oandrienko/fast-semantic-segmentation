@@ -127,14 +127,16 @@ def resnet_v1_block(scope, base_depth, num_units, stride, rate=1):
   Returns:
     A resnet_v1 bottleneck block.
   """
+  minor_depth = int(base_depth)
+  major_depth = int(base_depth * 4)
   return resnet_utils.Block(scope, bottleneck, [{
-      'depth': base_depth * 4,
-      'depth_bottleneck': base_depth,
+      'depth': major_depth,
+      'depth_bottleneck': minor_depth,
       'stride': 1,
       'overide_rate': rate
   }] * (num_units - 1) + [{
-      'depth': base_depth * 4,
-      'depth_bottleneck': base_depth,
+      'depth': major_depth,
+      'depth_bottleneck': minor_depth,
       'stride': stride,
       'overide_rate': rate
   }])
@@ -218,11 +220,11 @@ def dilated_resnet_v1_50(inputs,
       resnet_v1_downsample_block('downsample_block', factor=0.5))
 
   blocks += [
-    resnet_v1_block('block2', base_depth=128//filter_scale,
+    resnet_v1_block('block2', base_depth=128/filter_scale,
                     num_units=4, stride=2),
-    resnet_v1_block('block3', base_depth=256//filter_scale,
+    resnet_v1_block('block3', base_depth=256/filter_scale,
                     num_units=6, stride=2, rate=2),
-    resnet_v1_block('block4', base_depth=512//filter_scale,
+    resnet_v1_block('block4', base_depth=512/filter_scale,
                     num_units=3, stride=1, rate=4)]
 
   return resnet_v1(inputs, blocks, filter_scale, num_classes, is_training,
