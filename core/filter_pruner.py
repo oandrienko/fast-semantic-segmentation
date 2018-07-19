@@ -318,6 +318,10 @@ class FilterPruner(object):
                 new_var = graph_utils.add_variable_to_graph(
                     session.graph, trainable_var, init_value)
                 var_list.append(new_var)
+            # To avoid error with searching for global step
+            global_step = tf.train.get_or_create_global_step()
+            var_list.append(global_step)
+            # Need to run init to assign all our new variable vals
             session.run(tf.variables_initializer(var_list=var_list))
             write_saver = tf.train.Saver(
                 var_list=var_list, write_version=self.checkpoint_version)
