@@ -1,16 +1,23 @@
+r"""Main Training script for ICNet"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import os
 
 import tensorflow as tf
 from google.protobuf import text_format
+
 from tensorflow.python.tools.freeze_graph import freeze_graph_with_def_protos
 
 from protos import pipeline_pb2
 from builders import model_builder
 
-
 slim = tf.contrib.slim
 
 flags = tf.app.flags
+
+FLAGS = flags.FLAGS
 
 flags.DEFINE_string('input_shape', None,
                     'If input_type is `image_tensor`, this can explicitly set '
@@ -27,11 +34,6 @@ flags.DEFINE_string('trained_checkpoint_prefix', None,
                     'Path to trained checkpoint, typically of the form '
                     'path/to/model.ckpt')
 flags.DEFINE_string('output_directory', None, 'Path to write outputs.')
-# tf.app.flags.mark_flag_as_required('pipeline_config_path')
-# tf.app.flags.mark_flag_as_required('trained_checkpoint_prefix')
-# tf.app.flags.mark_flag_as_required('output_directory')
-
-FLAGS = flags.FLAGS
 
 
 def _get_outputs_from_inputs(input_tensors, model,

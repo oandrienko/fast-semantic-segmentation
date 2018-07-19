@@ -1,3 +1,8 @@
+r"""Main Evaluation script for ICNet"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import functools
 import os
 import six
@@ -8,7 +13,6 @@ from builders import dataset_builder
 from builders import preprocessor_builder as preprocessor
 from builders import model_builder
 from protos import pipeline_pb2
-
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -107,7 +111,7 @@ def create_predictions_and_labels(model, create_input_dict_fn,
     output_dict = model.predict(mean_subtracted_inputs)
     # Output graph def for pruning
     if eval_dir is not None:
-        pred_graph_def_path = os.path.join(eval_dir, "prediction_graph.pbtxt")
+        pred_graph_def_path = os.path.join(eval_dir, "prediction_graph.pb")
         f = tf.gfile.FastGFile(pred_graph_def_path, "wb")
         graph_def = tf.get_default_graph().as_graph_def()
         f.write(graph_def.SerializeToString())

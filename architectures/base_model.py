@@ -1,14 +1,14 @@
 """Abstract semantic segmentation model.
 
-Defines a base class to be used to groups of semantic segmentation models in
-the projects. Any supporting scripts such as trainers, evaluators and
+Defines a base class to be used by groups of semantic segmentation models in
+the project. Any supporting scripts such as trainers, evaluators and
 exporters should only call the methods defined in the abstract class.
 
 The general order of using the models implementing this abstract class can be
 asfollowed for both training and evaluation
 
 Training flow:
-inputs -> preprocess -> predict -> loss -> post-process (optional) -> outputs
+inputs -> preprocess -> predict -> loss -> outputs
 """
 from abc import ABCMeta
 from abc import abstractmethod

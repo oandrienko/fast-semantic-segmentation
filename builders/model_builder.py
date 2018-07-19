@@ -35,9 +35,10 @@ def _build_pspnet_icnet_model(model_config, is_training, add_summaries):
     if not num_classes:
         raise ValueError('"num_classes" must be greater than 0.')
 
-    filter_scale = model_config.filter_scale
-    if filter_scale > 1 or filter_scale < 0:
+    in_filter_scale = model_config.filter_scale
+    if in_filter_scale > 1 or in_filter_scale < 0:
         raise ValueError('"filter_scale" must be in the range (0,1].')
+    filter_scale = 1.0 / in_filter_scale
 
     pretrain_single_branch_mode = model_config.pretrain_single_branch_mode
     should_downsample_extractor = not pretrain_single_branch_mode

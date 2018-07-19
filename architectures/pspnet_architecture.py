@@ -1,4 +1,17 @@
-r"""PSPNet"""
+r"""PSPNet Semantic Segmentation architecture.
+
+As described in http://arxiv.org/abs/1612.01105.
+
+  Pyramid Scene Parsing Network
+  Hengshuang Zhao, Jianping Shi, Xiaojuan Qi, Xiaoyong Shen, Jiaya Jia
+
+This is a baseline architecture that was implemented for the purposes
+of validating the fast segmentation models.
+
+Please note that although this network is accurate, it is VERY
+slow and memory intensive. It should not be used under the assumption that
+it will result in similar performance as the other models in this project.
+"""
 from abc import abstractmethod
 from functools import partial
 import tensorflow as tf

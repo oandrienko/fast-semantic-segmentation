@@ -1,16 +1,10 @@
-r"""Contains the definition of the ICNet Semantic Segmentation architecture.
+r"""ICNet Semantic Segmentation architecture.
 
 As described in http://arxiv.org/abs/1704.08545.
 
   ICNet for Real-Time Semantic Segmentation
     on High-Resolution Images
   Hengshuang Zhao, Xiaojuan Qi, Xiaoyong Shen, Jianping Shi, Jiaya Jia
-
-Notes on training:
-Training must be done in multiple stages if being done from feature extractor
-weights that were trained using ImageNet. The training process incrementally
-reduces the number of filters in the architecture to speed up inference time
-and memory consumtion.
 """
 from abc import abstractmethod
 from functools import partial
@@ -25,19 +19,19 @@ class ICNetArchitecture(model.FastSegmentationModel):
     """ICNet Architecture definition."""
 
     def __init__(self,
-                is_training,
-                model_arg_scope,
-                num_classes,
-                feature_extractor,
-                classification_loss,
-                filter_scale,
-                pretrain_single_branch_mode=False,
-                use_aux_loss=True,
-                main_loss_weight=1.0,
-                first_branch_loss_weight=0.0,
-                second_branch_loss_weight=0.0,
-                add_summaries=True,
-                scope=None):
+                 is_training,
+                 model_arg_scope,
+                 num_classes,
+                 feature_extractor,
+                 classification_loss,
+                 filter_scale,
+                 pretrain_single_branch_mode=False,
+                 use_aux_loss=True,
+                 main_loss_weight=1.0,
+                 first_branch_loss_weight=0.0,
+                 second_branch_loss_weight=0.0,
+                 add_summaries=True,
+                 scope=None):
         super(ICNetArchitecture, self).__init__(num_classes=num_classes)
         self._is_training = is_training
         self._model_arg_scope = model_arg_scope
@@ -65,8 +59,8 @@ class ICNetArchitecture(model.FastSegmentationModel):
         return 'second_aux_predictions'
 
     @property
-    def pretrain_single_branch_mode_predictions_key(self):
-        return 'pretrain_single_branch_mode_predictions'
+    def single_branch_mode_predictions_key(self):
+        return 'single_branch_mode_predictions'
 
     @property
     def main_loss_key(self):
@@ -86,11 +80,12 @@ class ICNetArchitecture(model.FastSegmentationModel):
 
     # TODO: remove this... checkpointing should be temporary
     def gradient_checkpointing_nodes(self):
+        fe_base_name = 'SharedFeatureExtractor/resnet_v1_50'
         return [
-            'SharedFeatureExtractor/resnet_v1_50/block1/unit_3/bottleneck_v1/Relu:0',
-            'SharedFeatureExtractor/resnet_v1_50/block2/unit_4/bottleneck_v1/Relu:0',
-            'SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu:0',
-            'SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu:0',
+            fe_base_name+'/block1/unit_3/bottleneck_v1/Relu:0',
+            fe_base_name+'/block2/unit_4/bottleneck_v1/Relu:0',
+            fe_base_name+'/block3/unit_6/bottleneck_v1/Relu:0',
+            fe_base_name+'/block4/unit_3/bottleneck_v1/Relu:0',
             'FastPSPModule/Conv/Relu6:0'
         ]
 
@@ -144,13 +139,14 @@ class ICNetArchitecture(model.FastSegmentationModel):
             prediction_dict = {
                 self.main_class_predictions_key: predictions}
             # Auxilarary loss for training all three ICNet branches
-            if self._use_aux_loss:
+            if self._is_training and self._use_aux_loss:
                 if self._pretrain_single_branch_mode:
                     with tf.variable_scope('AuxPredictions'):
-                        psp_aux_out = slim.conv2d(psp_aux_out, self._num_classes,
-                            1, 1, activation_fn=None, normalizer_fn=None)
+                        psp_aux_out = slim.conv2d(psp_aux_out,
+                                self._num_classes, 1, 1,
+                                activation_fn=None, normalizer_fn=None)
                         prediction_dict[
-                            self.pretrain_single_branch_mode_predictions_key] = psp_aux_out
+                        self.single_branch_mode_predictions_key] = psp_aux_out
                 else:
                     prediction_dict[
                         self.first_aux_predictions_key] = first_aux_logits
@@ -161,12 +157,12 @@ class ICNetArchitecture(model.FastSegmentationModel):
     def _extract_shared_features(self, preprocessed_inputs, scope):
         if not self._pretrain_single_branch_mode:
             extractor_inputs = self._dynamic_interpolation(
-                    preprocessed_inputs,
-                    s_factor=0.5)
+                    preprocessed_inputs, s_factor=0.5)
         else:
             extractor_inputs = preprocessed_inputs
-        return self._feature_extractor.extract_features(
+        outputs = self._feature_extractor.extract_features(
                 extractor_inputs, scope=scope)
+        return outputs
 
     def _first_feature_branch(self, input_features):
         """A suggestion here is to first train the first resolution
@@ -174,61 +170,28 @@ class ICNetArchitecture(model.FastSegmentationModel):
         steps, begin training all branches as normal.
         """
         with tf.variable_scope('FastPSPModule'):
-            _, input_h, input_w, _ = input_features.get_shape()
-            if True:
-                full_pool = slim.avg_pool2d(input_features, [input_h, input_w],
-                                    stride=(input_h, input_w))
-                full_pool = tf.image.resize_bilinear(full_pool,
-                                    size=(input_h, input_w),
-                                    align_corners=True)
-                half_pool = slim.avg_pool2d(input_features,
-                                            [input_h/2, input_w/2],
-                                    stride=(input_h/2, input_w/2))
-                half_pool = tf.image.resize_bilinear(half_pool,
-                                    size=(input_h, input_w),
-                                    align_corners=True)
-                third_pool = slim.avg_pool2d(input_features,
-                                            [input_h/3, input_w/3],
-                                    stride=(input_h/3, input_w/3))
-                third_pool = tf.image.resize_bilinear(third_pool,
-                                    size=(input_h, input_w),
-                                    align_corners=True)
-                forth_pool = slim.avg_pool2d(input_features,
-                                            [input_h/6, input_w/6],
-                                    stride=(input_h/6, input_w/6))
-                forth_pool = tf.image.resize_bilinear(forth_pool,
-                                    size=(input_h, input_w),
-                                    align_corners=True)
-            else:
-                import pdb; pdb.set_trace()
-                full_pool = slim.avg_pool2d(input_features,
-                                           [33, 65],
-                                    stride=(33, 65))
-                full_pool = tf.image.resize_bilinear(full_pool,
-                                    size=(input_h, input_w),
-                                    align_corners=True)
-                half_pool = slim.avg_pool2d(input_features,
-                                            [17, 33],
-                                    stride=(16, 32))
-                half_pool = tf.image.resize_bilinear(half_pool,
-                                    size=(input_h, input_w),
-                                    align_corners=True)
-                third_pool = slim.avg_pool2d(input_features,
-                                            [13, 25],
-                                    stride=(10, 20))
-                third_pool = tf.image.resize_bilinear(third_pool,
-                                    size=(input_h, input_w),
-                                    align_corners=True)
-                forth_pool = slim.avg_pool2d(input_features,
-                                            [8, 15],
-                                    stride=(5, 10))
-                forth_pool = tf.image.resize_bilinear(forth_pool,
-                                    size=(input_h, input_w),
-                                    align_corners=True)
+            input_n, input_h, input_w, input_c = input_features.get_shape()
+            full_pool = slim.avg_pool2d(input_features,
+                    [input_h, input_w], stride=[input_h, input_w])
+            full_pool = tf.image.resize_bilinear(full_pool,
+                    size=(input_h, input_w), align_corners=True)
+            half_pool = slim.avg_pool2d(input_features,
+                    [input_h/2, input_w/2], stride=[input_h/2, input_w/2])
+            half_pool = tf.image.resize_bilinear(half_pool,
+                    size=(input_h, input_w), align_corners=True)
+            third_pool = slim.avg_pool2d(input_features,
+                    [input_h/3, input_w/3], stride=[input_h/3, input_w/3])
+            third_pool = tf.image.resize_bilinear(third_pool,
+                    size=(input_h, input_w), align_corners=True)
+            forth_pool = slim.avg_pool2d(input_features,
+                    [input_h/6, input_w/6], stride=[input_h/6, input_w/6])
+            forth_pool = tf.image.resize_bilinear(forth_pool,
+                    size=(input_h, input_w), align_corners=True)
             branch_merge = tf.add_n([input_features, full_pool,
-                                         half_pool, third_pool, forth_pool])
-            output = slim.conv2d(branch_merge, 512//self._filter_scale, [1, 1],
-                                 stride=1, normalizer_fn=slim.batch_norm)
+                                     half_pool, third_pool, forth_pool])
+            output = slim.conv2d(branch_merge,
+                    512//self._filter_scale, [1, 1],
+                    stride=1, normalizer_fn=slim.batch_norm)
             return output
 
     def _third_feature_branch(self, preprocessed_inputs):
@@ -251,7 +214,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
         aux_output = None
         with tf.variable_scope(scope):
             upsampled_inputs = self._dynamic_interpolation(
-                first_feature_map, z_factor=2.0)
+                    first_feature_map, z_factor=2.0)
             dilated_conv = slim.conv2d(upsampled_inputs,
                     256//self._filter_scale, [3, 3],
                     stride=1, rate=2, normalizer_fn=slim.batch_norm,
@@ -266,9 +229,10 @@ class ICNetArchitecture(model.FastSegmentationModel):
             output = tf.nn.relu(branch_merge)
             # Output aux predictions if aux loss_enableded
             if self._is_training and self._use_aux_loss:
-                aux_output = slim.conv2d(upsampled_inputs, self._num_classes,
-                               1, 1, activation_fn=None, normalizer_fn=None,
-                               scope='AuxOutput')
+                aux_output = slim.conv2d(upsampled_inputs,
+                        self._num_classes, 1, 1,
+                        activation_fn=None, normalizer_fn=None,
+                        scope='AuxOutput')
         return output, aux_output
 
     def _dynamic_interpolation(self, features_to_upsample,
@@ -305,7 +269,8 @@ class ICNetArchitecture(model.FastSegmentationModel):
                 self._groundtruth_labels, main_preds)
             main_loss = self._classification_loss(main_preds,
                                             main_scaled_labels)
-            losses_dict[self.main_loss_key] = (main_loss * self._main_loss_weight)
+            losses_dict[
+                self.main_loss_key] = (main_loss * self._main_loss_weight)
 
         if self._is_training and self._use_aux_loss:
             if not self._pretrain_single_branch_mode:
@@ -330,7 +295,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
             else:
                 with tf.name_scope('PretrainMainAuxLoss'): # 1/8 labels
                     psp_pretrain_preds = prediction_dict[
-                            self.pretrain_single_branch_mode_predictions_key]
+                            self.single_branch_mode_predictions_key]
                     psp_aux_scaled_labels = _resize_labels_to_logits(
                             self._groundtruth_labels, psp_pretrain_preds)
                     psp_pretrain_loss = self._classification_loss(
@@ -351,15 +316,11 @@ class ICNetArchitecture(model.FastSegmentationModel):
             tf.logging.info('Fine-tuning from classification checkpoints.')
             return self._feature_extractor.restore_from_classif_checkpoint_fn(
                 self.shared_feature_extractor_scope)
-
         exclude_list = ['global_step']
         variables_to_restore = slim.get_variables_to_restore(
                                         exclude=exclude_list)
-
         if fine_tune_checkpoint_type == 'segmentation-finetune':
             tf.logging.info('Fine-tuning from PSPNet based checkpoint.')
-
         if fine_tune_checkpoint_type == 'segmentation-finetune':
             variables_to_restore.append(slim.get_or_create_global_step())
-
         return variables_to_restore

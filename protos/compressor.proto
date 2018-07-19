@@ -1,0 +1,43 @@
+syntax = "proto2";
+
+package fast_semantic_segmentation.protos;
+
+message CommpressionConfig {
+    optional CompressionStrategy compression_strategy = 1;
+}
+
+message CompressionStrategy {
+    oneof compression_strategy {
+        FilterPruner filter_pruner = 1;
+    }
+}
+
+message FilterPruner {
+
+    optional NodeName input = 1;
+
+    optional NodeName output = 2;
+
+    optional string node_scope = 3;
+
+    optional float compression_factor = 4 [ default = 0.5 ];
+
+    repeated SingleNodePruningSpec node = 5;
+
+}
+
+message SingleNodePruningSpec {
+
+    optional NodeName target = 1;
+
+    optional NodeName source = 2;
+
+    repeated NodeName following = 3;
+
+    optional string node_scope = 4 [ default = "null" ];
+
+}
+
+message NodeName {
+    optional string name = 1;
+}

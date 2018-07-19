@@ -1,9 +1,14 @@
+r"""Main Training script for ICNet"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import functools
 import json
 import os
 import time
 import tensorflow as tf
-from tensorflow.python.platform import tf_logging as logging
+
 from tensorflow.python.ops import gradients
 from google.protobuf import text_format
 
@@ -85,8 +90,6 @@ flags.DEFINE_boolean('tmp_icnet_branch_summaries', False, 'temp flag')
 
 flags.DEFINE_boolean('tmp_psp_pretrain_summaries', False, 'temp flag')
 
-
-
 #################### TEMP, TO FIT FOR TRAINING ######################
 
  # Monkey patch tf.gradients
@@ -97,7 +100,6 @@ if FLAGS.gradient_checkpointing:
     gradients.__dict__["gradients"] = gradients_memory
 
 ######################################################################
-
 
 
 def create_training_input(create_input_fn,
@@ -160,7 +162,8 @@ def create_training_model_losses(input_queue, create_model_fn, train_config,
     prediction_dict = segmentation_model.predict(images)
 
     if FLAGS.gradient_checkpointing:
-        tf.logging.info('Adding gradient checkpoints to `checkpoints` collection')
+        tf.logging.info(
+            'Adding gradient checkpoints to `checkpoints` collection')
         graph = tf.get_default_graph()
         checkpoint_list = segmentation_model.gradient_checkpointing_nodes()
         for checkpoint_node_name in checkpoint_list:
@@ -415,12 +418,12 @@ def train_segmentation_model(create_model_fn,
 
             if 'should_log' in train_step_kwargs:
                 if sess.run(train_step_kwargs['should_log']):
-                    logging.info('global step %d: loss = %.4f (%.3f sec/step)',
+                    tf.logging.info('global step %d: loss = %.4f (%.3f sec/step)',
                         np_global_step, total_loss, time_elapsed)
 
             if FLAGS.show_memory:
                 mem_use = mem_util.peak_memory(run_metadata)['/gpu:0']/1e6
-                logging.info('Memory used: %.2f MB',(mem_use))
+                tf.logging.info('Memory used: %.2f MB',(mem_use))
 
             if 'should_stop' in train_step_kwargs:
                 should_stop = sess.run(train_step_kwargs['should_stop'])
