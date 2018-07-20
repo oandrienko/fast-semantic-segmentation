@@ -183,11 +183,11 @@ def eval_segmentation_model(create_model_fn,
     if image_summaries:
         pixel_scaling = max(1, 255 // num_classes)
         tf.summary.image(
-            'InputImage', inputs, family='EvalImages')
-        groundtruth_viz = tf.cast(labels*pixel_scaling, tf.uint8)
+            'InputImage', inputs_summary, family='EvalImages')
+        groundtruth_viz = tf.cast(labels_for_eval*pixel_scaling, tf.uint8)
         tf.summary.image(
             'GroundtruthImage', groundtruth_viz, family='EvalImages')
-        predictions_viz = tf.cast(predictions*pixel_scaling, tf.uint8)
+        predictions_viz = tf.cast(predictions_for_eval*pixel_scaling, tf.uint8)
         tf.summary.image(
             'PredictionImage', predictions_viz, family='EvalImages')
     summary_op = tf.summary.merge_all()
