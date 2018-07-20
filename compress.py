@@ -65,13 +65,16 @@ flags.DEFINE_string('config_path', '',
 flags.DEFINE_string('skippable_nodes', '',
                     'Nodes to not validate when pruning.')
 
+flags.DEFINE_boolean('interactive', False,
+                     'Whether the input files are in binary format.')
+
 
 def main(unused_args):
     if not tf.gfile.Exists(FLAGS.input_graph):
         print('The `input_graph` specified does not exist.')
         return -1
 
-    output_path = os.path.join(FLAGS.output_dir, "prunned_model.ckpt")
+    output_path_name = "prunned_model.ckpt"
     compression_config = compressor_pb2.CommpressionConfig()
     with tf.gfile.GFile(FLAGS.config_path, "r") as f:
         proto_str = f.read()
@@ -83,7 +86,8 @@ def main(unused_args):
         compressor_builder.build,
         compression_factor=FLAGS.compression_factor,
         skippable_nodes=skippable_nodes,
-        compression_config=compression_strategy_config)
+        compression_config=compression_strategy_config,
+        interactive_mode=FLAGS.interactive)
 
     input_graph_def = tf.GraphDef()
     mode = "rb" if FLAGS.input_binary else "r"
@@ -96,7 +100,9 @@ def main(unused_args):
 
     compressor = compression_fn()
     compressor.compress(input_graph_def, FLAGS.input_checkpoint)
-    compressor.save(output_path)
+    compressor.save(
+        output_checkpoint_dir=FLAGS.output_dir,
+        output_checkpoint_name=output_path_name)
 
 if __name__ == '__main__':
     tf.app.run()

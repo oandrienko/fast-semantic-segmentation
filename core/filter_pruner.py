@@ -18,16 +18,39 @@ Usage:
 
 See https://arxiv.org/abs/1801.07365 for details
 """
+import os
 import collections
 import numpy as np
 import tensorflow as tf
-import graph_utils
+import matplotlib.pyplot as plt
 
+import graph_utils
 from graph_utils import GraphTraversalState
 
 
 FilterPrunerNodeSpec = collections.namedtuple(
     "FilterPrunerNodeSpec", ["source", "target", "following"])
+
+
+
+def plot_magnitude_of_weights(plot_name, weights, compression):
+    weight_magnitudes = np.sort(np.abs(weights).sum((0,1,2)))
+    weight_magnitudes_list = weight_magnitudes.tolist()
+    _, _, _, channel_dim  = weights.shape
+    cut_off_mark = channel_dim - int(channel_dim*compression)
+    fig = plt.figure(figsize=(10, 5))
+    plt.plot(weight_magnitudes_list)
+    plt.xlabel("Output channel")
+    plt.xlim([0,channel_dim])
+    plt.ylabel("L1 norm")
+    plt.title(plot_name)
+    plt.axvline(
+        x=cut_off_mark,
+        ymin=0, ymax=max(weight_magnitudes_list),
+        color='red',
+        zorder=2)
+    plt.xticks(list(plt.xticks()[0])+[cut_off_mark])
+    plt.show()
 
 
 class FilterPruner(object):
@@ -40,6 +63,7 @@ class FilterPruner(object):
                  skippable_nodes=[],
                  checkpoint_version=tf.train.SaverDef.V2,
                  clear_devices=True,
+                 interactive_mode=False,
                  pruner_mode="ICNetPruner"):
         self.input_node = input_node
         self.output_node = output_node
@@ -58,6 +82,7 @@ class FilterPruner(object):
             raise ValueError("Currently only the pruner mode `ICNetPruner`"
                              " is implemented for pruning ICNet filters.")
         self.mode = pruner_mode
+        self.interactive_mode = interactive_mode
 
     def _init_pruning_graph(self, input_checkpoint):
         # Import graph def to use in the session
@@ -137,6 +162,10 @@ class FilterPruner(object):
             weights = self.output_values_map[weights_node_name]
         else:
             weights = self.values_map[weights_node_name]
+        # plot weights if needed
+        if self.interactive_mode:
+            plot_magnitude_of_weights(conv_node_name, weights,
+                                      self.compression_factor)
         (kernel_h, kernel_w, batch, num_filters) = weights.shape
         # Find filters to keep
         num_filters_to_keep = int(num_filters*self.compression_factor)
@@ -304,7 +333,11 @@ class FilterPruner(object):
         self._create_pruner_specs_recursively(self.input_node)
         self._apply_pruner_specs(self.pruner_specs)
 
-    def save(self,  output_checkpoint_path):
+    def save(self, output_checkpoint_dir, output_checkpoint_name):
+        output_checkpoint_path = os.path.join(
+                output_checkpoint_dir, output_checkpoint_name)
+        output_def_path = os.path.join(
+                output_checkpoint_dir, "prunned_graph.pbtxt")
         output_graph = tf.Graph()
         with output_graph.as_default():
             session = tf.Session(graph=output_graph)
@@ -328,4 +361,7 @@ class FilterPruner(object):
             write_saver.save(session, output_checkpoint_path)
             print('Saving pruned model checkpoint to {}'.format(
                 output_checkpoint_path))
+            output_graph_def = output_graph.as_graph_def()
+            f = tf.gfile.FastGFile(output_def_path, "w")
+            f.write(str(output_graph_def))
         session.close()

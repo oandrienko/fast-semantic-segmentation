@@ -212,7 +212,7 @@ def dilated_resnet_v1_50(inputs,
   """
 
   blocks = [
-    resnet_v1_block('block1', base_depth=64//filter_scale,
+    resnet_v1_block('block1', base_depth=64/filter_scale,
                     num_units=3, stride=2)]
 
   if mid_downsample:

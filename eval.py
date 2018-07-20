@@ -111,10 +111,10 @@ def create_predictions_and_labels(model, create_input_dict_fn,
     output_dict = model.predict(mean_subtracted_inputs)
     # Output graph def for pruning
     if eval_dir is not None:
-        pred_graph_def_path = os.path.join(eval_dir, "prediction_graph.pb")
-        f = tf.gfile.FastGFile(pred_graph_def_path, "wb")
         graph_def = tf.get_default_graph().as_graph_def()
-        f.write(graph_def.SerializeToString())
+        pred_graph_def_path = os.path.join(eval_dir, "prediction_graph.pbtxt")
+        f = tf.gfile.FastGFile(pred_graph_def_path, "w")
+        f.write(str(graph_def))
     # Validation loss to fight overfitting
     validation_losses = model.loss(output_dict)
     eval_total_loss =  sum(validation_losses.values())
