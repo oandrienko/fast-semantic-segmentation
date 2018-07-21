@@ -1,7 +1,8 @@
 import os
 import functools
+
 from protos import compressor_pb2
-from core.filter_pruner import FilterPruner, FilterPrunerNodeSpec
+from libs.filter_pruner import FilterPruner, FilterPrunerNodeSpec
 
 def _complete_node_scope(name, parent_scope, overide_scope=None):
     if not name:
