@@ -21,8 +21,8 @@ TEMP Example:
         --input_graph=tmp/weights/prediction_graph.pbtxt \
         --input_checkpoint=tmp/weights/model.ckpt-57021 \
         --output_dir=tmp/weights_pruned \
-        --config_pat=configs/icnet_resnet_v1_pruner.config \
-        --skippable_nodes="Predictions/postrain/biases,CascadeFeatureFusion_0/AuxOutput/biases, CascadeFeatureFusion_1/AuxOutput/biases"
+        --config_path=configs/icnet_resnet_v1_pruner.config \
+        --skippable_nodes="Predictions/postrain/biases"
 
 """
 from __future__ import absolute_import
@@ -38,7 +38,9 @@ import tensorflow as tf
 from protos import compressor_pb2
 from builders import compressor_builder
 
+
 tf.logging.set_verbosity(tf.logging.INFO)
+
 
 flags = tf.app.flags
 
@@ -103,6 +105,7 @@ def main(unused_args):
     compressor.save(
         output_checkpoint_dir=FLAGS.output_dir,
         output_checkpoint_name=output_path_name)
+
 
 if __name__ == '__main__':
     tf.app.run()

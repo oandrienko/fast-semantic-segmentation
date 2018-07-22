@@ -149,7 +149,9 @@ class FilterPruner(object):
             new_result = self._get_next_op_instance_name(
                                 next_node_name, op_name)
             if new_result is not None:
-                results += new_result
+                for nr in new_result:
+                    if nr not in results:
+                        results.append(nr)
         return results
 
     def _prune_conv_node(self, conv_node_name, idxs=None):
