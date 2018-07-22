@@ -78,17 +78,6 @@ class ICNetArchitecture(model.FastSegmentationModel):
     def pretrain_single_branch_mode_loss_key(self):
         return 'pretrain_single_branch_mode_loss'
 
-    # TODO: remove this... checkpointing should be temporary
-    def gradient_checkpointing_nodes(self):
-        fe_base_name = 'SharedFeatureExtractor/resnet_v1_50'
-        return [
-            fe_base_name+'/block1/unit_3/bottleneck_v1/Relu:0',
-            fe_base_name+'/block2/unit_4/bottleneck_v1/Relu:0',
-            fe_base_name+'/block3/unit_6/bottleneck_v1/Relu:0',
-            fe_base_name+'/block4/unit_3/bottleneck_v1/Relu:0',
-            'FastPSPModule/Conv/Relu6:0'
-        ]
-
     def preprocess(self, inputs):
         if inputs.dtype is not tf.float32:
             raise ValueError('`preprocess` expects a tf.float32 tensor')

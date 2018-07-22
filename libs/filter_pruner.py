@@ -1,22 +1,18 @@
-""" Filter Pruner for model compression
+r""" Filter Pruner for model compression
 
---> Global Step
-global_step (DT_INT64) []
-
---> Conv
-Conv/weights (DT_FLOAT) [3,3,3,64]
---> BatchNorm
-Conv/BatchNorm/beta (DT_FLOAT) [64]
-Conv/BatchNorm/gamma (DT_FLOAT) [64]
-Conv/BatchNorm/moving_mean (DT_FLOAT) [64]
-Conv/BatchNorm/moving_variance (DT_FLOAT) [64]
+See the paper "Pruning Filters for Efficient ConvNets" for more details
+    https://arxiv.org/abs/1608.08710
 
 Usage:
 
-    pruner = FilterPruner(tf_graph, 0.5, mode="ICNetPruner")
-    output_graph = pruner.prune(sess)
+    compressor = FilterPruner(input_node=input_node_name,
+        output_node=output_node_name, compression_factor=compression_factor)
 
-See https://arxiv.org/abs/1801.07365 for details
+    compressor.compress(input_graph_def, FLAGS.input_checkpoint)
+
+    compressor.save(
+        output_checkpoint_dir=FLAGS.output_dir,
+        output_checkpoint_name=output_path_name)
 """
 import os
 import collections
