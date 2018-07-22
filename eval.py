@@ -18,10 +18,6 @@ from libs.evaluator import eval_segmentation_model
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
-slim = tf.contrib.slim
-
-prefetch_queue = slim.prefetch_queue
-
 flags = tf.app.flags
 
 FLAGS = flags.FLAGS
@@ -116,14 +112,15 @@ def main(_):
             FLAGS.evaluate_all_from_checkpoint, FLAGS.train_dir)
         # Run eval on each checkpoint only once. Exit when done.
         for curr_checkpoint in checkpoints_to_evaluate:
-            eval_segmentation_model_once(curr_checkpoint
+            eval_segmentation_model_once(curr_checkpoint,
                                          create_model_fn,
                                          create_input_fn,
                                          input_dims,
                                          eval_config,
                                          eval_dir=FLAGS.eval_dir,
                                          cropped_evaluation=cropped_evaluation,
-                                         image_summaries=FLAGS.image_summaries)
+                                         image_summaries=FLAGS.image_summaries,
+                                         verbose=FLAGS.verbose)
     else:
         eval_segmentation_model(
             create_model_fn,
@@ -134,7 +131,8 @@ def main(_):
             eval_dir=FLAGS.eval_dir,
             cropped_evaluation=cropped_evaluation,
             evaluate_single_checkpoint=FLAGS.evaluate_all_from_checkpoint,
-            image_summaries=FLAGS.image_summaries)
+            image_summaries=FLAGS.image_summaries,
+            verbose=FLAGS.verbose)
 
 
 if __name__ == '__main__':

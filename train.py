@@ -17,10 +17,6 @@ from libs.trainer import train_segmentation_model
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
-slim = tf.contrib.slim
-
-prefetch_queue = slim.prefetch_queue
-
 flags = tf.app.flags
 
 FLAGS = flags.FLAGS
@@ -71,24 +67,11 @@ flags.DEFINE_integer('max_checkpoints_to_keep', 50, # might want to cut this dow
 
 # Debug flag
 
-flags.DEFINE_boolean('show_memory', False, '')
-
 flags.DEFINE_boolean('test_image_summaries', False, '')
 
 flags.DEFINE_boolean('tmp_icnet_branch_summaries', False, 'temp flag')
 
 flags.DEFINE_boolean('tmp_psp_pretrain_summaries', False, 'temp flag')
-
-#################### TEMP, TO FIT FOR TRAINING ######################
-
- # Monkey patch tf.gradients
-if FLAGS.gradient_checkpointing:
-    def gradients_memory(ys, xs, grad_ys=None, **kwargs):
-        return memory_saving_gradients.gradients(
-            ys, xs, grad_ys, checkpoints='collection', **kwargs)
-    gradients.__dict__["gradients"] = gradients_memory
-
-######################################################################
 
 
 def main(_):
@@ -130,7 +113,9 @@ def main(_):
         num_ps_tasks=FLAGS.num_ps_tasks,
         max_checkpoints_to_keep=FLAGS.max_checkpoints_to_keep,
         save_interval_secs=FLAGS.save_interval_secs,
-        image_summaries=FLAGS.test_image_summaries)
+        image_summaries=FLAGS.test_image_summaries,
+        tmp_icnet_branch_summaries=FLAGS.tmp_icnet_branch_summaries,
+        tmp_psp_pretrain_summaries=FLAGS.tmp_psp_pretrain_summaries)
 
 
 if __name__ == '__main__':

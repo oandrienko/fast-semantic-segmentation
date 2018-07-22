@@ -15,6 +15,11 @@ from builders import preprocessor_builder
 from builders import optimizer_builder
 
 
+slim = tf.contrib.slim
+
+prefetch_queue = slim.prefetch_queue
+
+
 def create_training_input(create_input_fn,
                           preprocess_fn,
                           batch_size,
@@ -81,7 +86,8 @@ def create_training_model_losses(input_queue, create_model_fn, train_config,
         graph = tf.get_default_graph()
         checkpoint_list = gradient_checkpoints
         for checkpoint_node_name in checkpoint_list:
-            node = graph.get_tensor_by_name(checkpoint_node_name)
+            curr_tensor_name = checkpoint_node_name + ":0"
+            node = graph.get_tensor_by_name(curr_tensor_name)
             tf.add_to_collection('checkpoints', node)
 
     # Gather main and aux losses here to single collection
@@ -107,8 +113,12 @@ def train_segmentation_model(create_model_fn,
                              max_checkpoints_to_keep,
                              save_interval_secs,
                              image_summaries,
+                             log_memory=False,
                              gradient_checkpoints=None,
-                             sync_bn_accross_gpu=False):
+                             sync_bn_accross_gpu=False,
+                             # TMP
+                             tmp_icnet_branch_summaries=False,
+                             tmp_psp_pretrain_summaries=False):
     """Create an instance of the FastSegmentationModel"""
     _, segmentation_model = create_model_fn()
     deploy_config = model_deploy.DeploymentConfig(
@@ -256,7 +266,7 @@ def train_segmentation_model(create_model_fn,
             summaries.add(
               tf.summary.image('VerifyTrainImageMain/Groundtruths', main_gt))
 
-            if FLAGS.tmp_icnet_branch_summaries:
+            if tmp_icnet_branch_summaries:
                 main_out = graph.get_tensor_by_name(
                     '%sPredictions/postrain/BiasAdd:0' % summ_first_clone_scope)
                 main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
@@ -287,7 +297,7 @@ def train_segmentation_model(create_model_fn,
                 summaries.add(
                   tf.summary.image('VerifyTrainImageSecondBranchAux/Groundtruths', aux_gt_1))
 
-            if FLAGS.tmp_psp_pretrain_summaries:
+            if tmp_psp_pretrain_summaries:
                 main_out = graph.get_tensor_by_name(
                     '%sPredictions/pretrain/BiasAdd:0' % summ_first_clone_scope)
                 main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
@@ -339,7 +349,7 @@ def train_segmentation_model(create_model_fn,
                     tf.logging.info('global step %d: loss = %.4f (%.3f sec/step)',
                         np_global_step, total_loss, time_elapsed)
 
-            if FLAGS.show_memory:
+            if log_memory:
                 mem_use = mem_util.peak_memory(run_metadata)['/gpu:0']/1e6
                 tf.logging.info('Memory used: %.2f MB',(mem_use))
 

@@ -42,11 +42,11 @@ from libs.trainer import train_segmentation_model
 
 # CEHCKPOINT NODES FOR MEM SAVING GRADIENTS
 ICNET_GRADIENT_CHECKPOINTS = [
-    'SharedFeatureExtractor/resnet_v1_50/block1/unit_3/bottleneck_v1/Relu:0'
-    'SharedFeatureExtractor/resnet_v1_50/block2/unit_4/bottleneck_v1/Relu:0'
-    'SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu:0'
-    'SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu:0'
-    'FastPSPModule/Conv/Relu6:0'
+    'SharedFeatureExtractor/resnet_v1_50/block1/unit_3/bottleneck_v1/Relu',
+    'SharedFeatureExtractor/resnet_v1_50/block2/unit_4/bottleneck_v1/Relu',
+    'SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu',
+    'SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu',
+    'FastPSPModule/Conv/Relu6'
 ]
 
 
@@ -107,7 +107,7 @@ flags.DEFINE_integer('max_checkpoints_to_keep', 50, # might want to cut this dow
 
 # Debug flag
 
-flags.DEFINE_boolean('show_memory', False, '')
+flags.DEFINE_boolean('log_memory', False, '')
 
 flags.DEFINE_boolean('test_image_summaries', False, '')
 
@@ -156,6 +156,7 @@ def main(_):
         max_checkpoints_to_keep=FLAGS.max_checkpoints_to_keep,
         save_interval_secs=FLAGS.save_interval_secs,
         image_summaries=FLAGS.test_image_summaries,
+        log_memory=FLAGS.log_memory,
         gradient_checkpoints=ICNET_GRADIENT_CHECKPOINTS)
 
 

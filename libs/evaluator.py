@@ -11,6 +11,11 @@ from builders import dataset_builder
 from builders import preprocessor_builder as preprocessor
 
 
+slim = tf.contrib.slim
+
+prefetch_queue = slim.prefetch_queue
+
+
 def create_evaluation_input(create_input_dict_fn,
                             input_height,
                             input_width,
@@ -73,7 +78,8 @@ def eval_segmentation_model_once(checkpoint_path,
                                  eval_config,
                                  eval_dir,
                                  cropped_evaluation=False,
-                                 image_summaries=False):
+                                 image_summaries=False,
+                                 verbose=False):
     return eval_segmentation_model(
         create_model_fn,
         create_input_fn,
@@ -83,7 +89,8 @@ def eval_segmentation_model_once(checkpoint_path,
         eval_dir=eval_dir,
         cropped_evaluation=cropped_evaluation,
         evaluate_single_checkpoint=checkpoint_path,
-        image_summaries=image_summaries)
+        image_summaries=image_summaries,
+        verbose=verbose)
 
 
 def eval_segmentation_model(create_model_fn,
@@ -94,7 +101,8 @@ def eval_segmentation_model(create_model_fn,
                             eval_dir,
                             cropped_evaluation=False,
                             evaluate_single_checkpoint=None,
-                            image_summaries=False):
+                            image_summaries=False,
+                            verbose=False):
     ignore_label = eval_config.ignore_label
     num_classes, segmentation_model = create_model_fn()
 
@@ -125,7 +133,7 @@ def eval_segmentation_model(create_model_fn,
                         flattened_predictions, eval_labels, num_classes,
                         weights=tf.to_float(neg_validity_mask))
     # Print updates if verbosity is requested
-    if FLAGS.verbose:
+    if verbose:
         update_op = tf.Print(update_op, [value_op], predictions_tag)
     # TODO: Extend the metrics tuple if needed in the future
     metric_map[predictions_tag] = (value_op, update_op)
