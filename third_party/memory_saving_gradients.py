@@ -25,7 +25,7 @@ def gradients_speed(ys, xs, grad_ys=None, **kwargs):
 
 def gradients_memory(ys, xs, grad_ys=None, **kwargs):
     return gradients(ys, xs, grad_ys, checkpoints='memory', **kwargs)
-        
+
 def gradients_collection(ys, xs, grad_ys=None, **kwargs):
     return gradients(ys, xs, grad_ys, checkpoints='collection', **kwargs)
 
@@ -62,13 +62,13 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
                                        inclusive=True)
 
     debug_print("bwd_ops: %s", bwd_ops)
-    
+
     # forward ops are all ops that are candidates for recomputation
     fwd_ops = ge.get_forward_walk_ops([x.op for x in xs],
                                       inclusive=True,
                                       within_ops=bwd_ops)
     debug_print("fwd_ops: %s", fwd_ops)
-    
+
     # exclude ops with no inputs
     fwd_ops = [op for op in fwd_ops if op._inputs]
 
@@ -87,11 +87,11 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
     if type(checkpoints) is not list:
         if checkpoints == 'collection':
             checkpoints = tf.get_collection('checkpoints')
-            
+
         elif checkpoints == 'speed':
             # checkpoint all expensive ops to maximize running speed
             checkpoints = ge.filter_ts_from_regex(fwd_ops, 'conv2d|Conv|MatMul')
-            
+
         elif checkpoints == 'memory':
 
             # remove very small tensors and some weird ops
@@ -151,7 +151,7 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
             else:
                 step = int(np.ceil(len(bottleneck_ts) / np.sqrt(N)))
                 checkpoints = sorted_bottlenecks[step::step]
-            
+
         else:
             raise Exception('%s is unsupported input for "checkpoints"' % (checkpoints,))
 
@@ -178,7 +178,7 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
 
     # remove initial and terminal nodes from checkpoints list if present
     checkpoints = list(set(checkpoints) - set(ys) - set(xs))
-    
+
     # check that we have some nodes to checkpoint
     if not checkpoints:
         raise Exception('no checkpoints nodes found or given as input! ')
@@ -357,7 +357,7 @@ def debug_print(s, *args):
 def format_ops(ops, sort_outputs=True):
   """Helper method for printing ops. Converts Tensor/Operation op to op.name,
   rest to str(op)."""
-    
+
   if hasattr(ops, '__iter__') and not isinstance(ops, str):
     l = [(op.name if hasattr(op, "name") else str(op)) for op in ops]
     if sort_outputs:
