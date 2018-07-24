@@ -13,7 +13,7 @@ from builders import dataset_builder
 from builders import model_builder
 from protos import pipeline_pb2
 from libs.evaluator import eval_segmentation_model
-
+from libs.evaluator import eval_segmentation_model_once
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -60,8 +60,8 @@ def get_checkpoints_from_path(initial_checkpoint_path, checkpoint_dir):
     tf.logging.info('Searching checkpoints in %s', checkpoint_dir)
     for idx, ckpt in enumerate(all_checkpoints):
         print(idx, ' ', str(ckpt))
-        basename = os.path.basename(ckpt)
-        full_init_ckpt_path = os.path.join(basename, initial_checkpoint_path)
+        dirname = os.path.dirname(ckpt)
+        full_init_ckpt_path = os.path.join(dirname, initial_checkpoint_path)
         if str(ckpt) == full_init_ckpt_path:
             checkpoints_to_evaluate = all_checkpoints[idx:]
             break

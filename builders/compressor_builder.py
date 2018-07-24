@@ -13,7 +13,8 @@ def _complete_node_scope(name, parent_scope, overide_scope=None):
     return os.path.join(main_scope, name)
 
 def _build_filter_pruning_compressor(filter_pruning_config, skippable_nodes,
-                                     compression_factor, interactive_mode):
+                                     compression_factor, interactive_mode,
+                                     soft_apply):
     input_node_name = filter_pruning_config.input.name
     output_node_name = filter_pruning_config.output.name
     # compression_factor = filter_pruning_config.compression_factor
@@ -44,12 +45,13 @@ def _build_filter_pruning_compressor(filter_pruning_config, skippable_nodes,
                           compression_factor=compression_factor,
                           init_pruner_specs=pruner_specs,
                           skippable_nodes=skippable_nodes,
-                          interactive_mode=interactive_mode)
+                          interactive_mode=interactive_mode,
+                          soft_apply=soft_apply)
     return pruner
 
 
 def build(compression_config, skippable_nodes, compression_factor,
-          interactive_mode=False):
+          interactive_mode=False, soft_apply=False):
     if not isinstance(compression_config, compressor_pb2.CompressionStrategy):
         raise ValueError('pruner_config not of type '
                          'compressor_pb2.CompressionStrategy.')
@@ -59,7 +61,8 @@ def build(compression_config, skippable_nodes, compression_factor,
                     compression_config.filter_pruner,
                     skippable_nodes,
                     compression_factor,
-                    interactive_mode)
+                    interactive_mode,
+                    soft_apply)
 
     raise ValueError('Unknown compression strategy: {}'.format(
         compression_strategy))

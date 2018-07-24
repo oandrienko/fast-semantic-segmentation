@@ -60,7 +60,8 @@ class FilterPruner(object):
                  checkpoint_version=tf.train.SaverDef.V2,
                  clear_devices=True,
                  interactive_mode=False,
-                 pruner_mode="ICNetPruner"):
+                 pruner_mode="ICNetPruner",
+                 soft_apply=False):
         self.input_node = input_node
         self.output_node = output_node
         self.compression_factor = compression_factor
@@ -79,6 +80,7 @@ class FilterPruner(object):
                              " is implemented for pruning ICNet filters.")
         self.mode = pruner_mode
         self.interactive_mode = interactive_mode
+        self.soft_apply = soft_apply
 
     def _init_pruning_graph(self, input_checkpoint):
         # Import graph def to use in the session
@@ -170,27 +172,19 @@ class FilterPruner(object):
         weight_magnitudes = np.abs(weights).sum((0,1,2))
         smallest_idxs = np.argsort(-weight_magnitudes)
         top_smallest_idxs = np.sort(smallest_idxs[:num_filters_to_keep])
+        prune_idxs = np.zeros(num_filters).astype(bool)
+        prune_idxs[top_smallest_idxs] = True
         if idxs is not None:
-            top_smallest_idxs = idxs
-        # Create new Conv layer with pruned weights
-        pruned_weights = weights[:,:,:,top_smallest_idxs]
-        self.output_values_map[weights_node_name] = pruned_weights
-        return weights_node_name, top_smallest_idxs
-
-    def _remove_conv_param_channels(self, next_conv_node_name, prune_idxs):
-        curr_node = self.nodes_map[next_conv_node_name]
-        weights_node_name = graph_utils.remove_ref_from_node_name(
-                curr_node.input[1])
-        # If this node has had FILTERS removed, we can still remove
-        # input channels. So this case should be fine
-        if weights_node_name in self.output_values_map:
-            weights = self.output_values_map[weights_node_name]
+            prune_idxs = idxs
+        # Apply by actually changing shape, or simulate pruning
+        if not self.soft_apply:
+            pruned_weights = weights[:,:,:,prune_idxs]
         else:
-            weights = self.values_map[weights_node_name]
-        (kernel_h, kernel_w, batch, num_filters) = weights.shape
-        updated_kernels = weights[:,:,prune_idxs,:]
-        self.output_values_map[weights_node_name] = updated_kernels
-        return weights_node_name
+            pruned_weights = np.copy(weights)
+            pruned_weights[:,:,:,~prune_idxs] = 0
+        # Create new Conv layer with pruned weights
+        self.output_values_map[weights_node_name] = pruned_weights
+        return weights_node_name, prune_idxs
 
     def _remove_bn_param_channels(self, next_bn_node_name, prune_idxs):
         curr_node = self.nodes_map[next_bn_node_name]
@@ -207,9 +201,32 @@ class FilterPruner(object):
         for var_name in [scale_node_name, shift_node_name,
                          mean_node_name, variance_node_name]:
             value = self.values_map[var_name]
-            pruned_value = value[prune_idxs]
+            if not self.soft_apply:
+                pruned_value = value[prune_idxs]
+            else:
+                pruned_value = np.copy(value)
+                pruned_value[~prune_idxs] = 0
             self.output_values_map[var_name] = pruned_value
         return next_bn_node_name
+
+    def _remove_conv_param_channels(self, next_conv_node_name, prune_idxs):
+        curr_node = self.nodes_map[next_conv_node_name]
+        weights_node_name = graph_utils.remove_ref_from_node_name(
+                curr_node.input[1])
+        # If this node has had FILTERS removed, we can still remove
+        # input channels. So this case should be fine
+        if weights_node_name in self.output_values_map:
+            weights = self.output_values_map[weights_node_name]
+        else:
+            weights = self.values_map[weights_node_name]
+        (kernel_h, kernel_w, batch, num_filters) = weights.shape
+        if not self.soft_apply:
+            updated_kernels = weights[:,:,prune_idxs,:]
+        else:
+            updated_kernels = np.copy(weights)
+            updated_kernels[:,:,~prune_idxs,:] = 0
+        self.output_values_map[weights_node_name] = updated_kernels
+        return weights_node_name
 
     def _apply_pruner_specs(self, pruner_specs):
         self.output_values_map = {}
@@ -318,7 +335,7 @@ class FilterPruner(object):
         for next_node in next_node_names:
             self._create_pruner_specs_recursively(next_node)
 
-    def compress(self, input_graph_def, input_checkpoint):
+    def compress(self, input_graph_def, input_checkpoint, skip_apply=False):
         self.input_graph_def = input_graph_def
         if self.clear_devices:
             graph_utils.clear_node_devices(self.input_graph_def.node)
@@ -329,7 +346,8 @@ class FilterPruner(object):
         self.state = GraphTraversalState(
                 already_visited={}, output_node_stack=[])
         self._create_pruner_specs_recursively(self.input_node)
-        self._apply_pruner_specs(self.pruner_specs)
+        if not skip_apply:
+            self._apply_pruner_specs(self.pruner_specs)
 
     def save(self, output_checkpoint_dir, output_checkpoint_name):
         output_checkpoint_path = os.path.join(
@@ -341,8 +359,10 @@ class FilterPruner(object):
             session = tf.Session(graph=output_graph)
             var_list = []
             for trainable_var in self.trainable_vars:
-                if trainable_var in self.skippable_nodes:
-                    print('Skipping saving of node %s'%trainable_var)
+                if (trainable_var in self.skippable_nodes or
+                    trainable_var not in self.output_values_map):
+                    print('WARNING: Copying original node %s...'%
+                        trainable_var)
                     init_value = self.values_map[trainable_var]
                 else:
                     init_value = self.output_values_map[trainable_var]
