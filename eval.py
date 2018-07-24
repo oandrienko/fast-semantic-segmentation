@@ -112,6 +112,7 @@ def main(_):
             FLAGS.evaluate_all_from_checkpoint, FLAGS.train_dir)
         # Run eval on each checkpoint only once. Exit when done.
         for curr_checkpoint in checkpoints_to_evaluate:
+            tf.reset_default_graph()
             eval_segmentation_model_once(curr_checkpoint,
                                          create_model_fn,
                                          create_input_fn,
