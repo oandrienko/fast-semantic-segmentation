@@ -243,7 +243,7 @@ class FilterPruner(object):
                 raise ValueError("Only Conv nodes can be prunned with the"
                                  " FilterPruner compressor.")
             # Prune the current conv we are dealing with
-            if source_node_name:
+            if not self.soft_apply and source_node_name:
                 source_node_idxs = pruned_node_idxs[source_node_name]
             else:
                 source_node_idxs = None
