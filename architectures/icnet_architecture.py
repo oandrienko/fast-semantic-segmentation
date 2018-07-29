@@ -84,6 +84,16 @@ class ICNetArchitecture(model.FastSegmentationModel):
         with tf.name_scope('Preprocessor'):
             return self._feature_extractor.preprocess(inputs)
 
+    def _extract_shared_features(self, preprocessed_inputs, scope):
+        if not self._pretrain_single_branch_mode:
+            extractor_inputs = self._dynamic_interpolation(
+                    preprocessed_inputs, s_factor=0.5)
+        else:
+            extractor_inputs = preprocessed_inputs
+        outputs = self._feature_extractor.extract_features(
+                extractor_inputs, scope=scope)
+        return outputs
+
     def predict(self, preprocessed_inputs, scope=None):
         """Build main inference pass"""
         with slim.arg_scope(self._model_arg_scope):
@@ -92,7 +102,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
                  preprocessed_inputs,
                  scope=self.shared_feature_extractor_scope)
             # Branch specific layers
-            pooled_quarter_res = self._first_feature_branch(quarter_res)
+            pooled_quarter_res = self._icnet_pspmodule(quarter_res)
 
             # We enable the option to train using only the main resolution
             # branch which includes the PSPNet based module
@@ -143,17 +153,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
                         self.second_aux_predictions_key] = second_aux_logits
             return prediction_dict
 
-    def _extract_shared_features(self, preprocessed_inputs, scope):
-        if not self._pretrain_single_branch_mode:
-            extractor_inputs = self._dynamic_interpolation(
-                    preprocessed_inputs, s_factor=0.5)
-        else:
-            extractor_inputs = preprocessed_inputs
-        outputs = self._feature_extractor.extract_features(
-                extractor_inputs, scope=scope)
-        return outputs
-
-    def _first_feature_branch(self, input_features):
+    def _icnet_pspmodule(self, input_features):
         """A suggestion here is to first train the first resolution
         branche without considering other branches. After some M number of
         steps, begin training all branches as normal.
@@ -297,10 +297,8 @@ class ICNetArchitecture(model.FastSegmentationModel):
                     fine_tune_checkpoint_type='segmentation'):
         """Restore variables for checkpoints correctly"""
         if fine_tune_checkpoint_type not in [
-                    'segmentation', 'classification', 'segmentation-finetune']:
-            raise ValueError('Not supported '
-                             'fine_tune_checkpoint_type: {}'.format(
-                             fine_tune_checkpoint_type))
+                'segmentation', 'classification', 'segmentation-finetune']:
+            raise ValueError('Not supported fine_tune_checkpoint_type: {}'.format(fine_tune_checkpoint_type))
         if fine_tune_checkpoint_type == 'classification':
             tf.logging.info('Fine-tuning from classification checkpoints.')
             return self._feature_extractor.restore_from_classif_checkpoint_fn(
@@ -310,6 +308,5 @@ class ICNetArchitecture(model.FastSegmentationModel):
                                         exclude=exclude_list)
         if fine_tune_checkpoint_type == 'segmentation-finetune':
             tf.logging.info('Fine-tuning from PSPNet based checkpoint.')
-        if fine_tune_checkpoint_type == 'segmentation-finetune':
             variables_to_restore.append(slim.get_or_create_global_step())
         return variables_to_restore
