@@ -228,19 +228,20 @@ def main(unused_args):
                 compression_factor=compression_factor,
                 skippable_nodes=FLAGS.skippable_nodes)
             tf.reset_default_graph()
+            eval_dirname = os.path.dirname(curr_output_dir_name)
             output_metric = run_eval(
                 curr_output_ckpt_name,
                 model_config=model_config,
                 input_config=input_config,
                 eval_config=eval_config,
-                eval_dir=curr_output_dir_name)
+                eval_dir=eval_dirname)
             layer_results[str(compression_factor)] = output_metric
+            if not FLAGS.keep_all_checkpoints:
+                tf.gfile.DeleteRecursively(curr_output_dir_name)
             print(" - eval result: ", output_metric)
         METRICS_RESULTS[pruner_spec.target] = layer_results
         with open(save_file_path, 'wb') as f:
             pickle.dump(METRICS_RESULTS, f, pickle.HIGHEST_PROTOCOL)
-        if not FLAGS.keep_all_checkpoints:
-            tf.gfile.DeleteRecursively(curr_output_dir_name)
     print("")
     print("DONE!")
 
