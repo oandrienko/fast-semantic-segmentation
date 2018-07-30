@@ -106,12 +106,12 @@ class PSPNetArchitecture(model.FastSegmentationModel):
             input_n, input_h, input_w, input_c = input_features.get_shape()
 
             # ...
-            ???
+            # ???
             # ...
 
             branch_merge = tf.concat([input_features, full_pool,
                                      half_pool, third_pool, forth_pool])
-            output = slim.conv2d(branch_merge, ???, [1, 1],
+            output = slim.conv2d(branch_merge, 999, [1, 1], # ???
                     stride=1, normalizer_fn=slim.batch_norm)
             return output
 
