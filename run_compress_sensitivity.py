@@ -60,6 +60,10 @@ flags.DEFINE_string('prune_config_path', '',
 flags.DEFINE_string('skippable_nodes', '',
                     'Nodes to not validate when pruning.')
 
+flags.DEFINE_boolean('keep_all_checkpoints', False,
+                     'Whether to keep checkpoints and not delete them.')
+
+
 def log_dir_name(layer_name, percent_kept, logdir):
     layer_name = layer_name.replace('/','_')
     trial_path = "scale_{}".format(percent_kept)
@@ -210,7 +214,7 @@ def main(unused_args):
     # Run experiment
     save_file_path = os.path.join(FLAGS.output_dir, "compress_state.pkl")
     METRICS_RESULTS = {}
-    for pruner_spec in all_pruner_specs[:5]:
+    for pruner_spec in all_pruner_specs:
         print("")
         print("")
         print("STARTING NEW LAYER EXPERIMENT: ", pruner_spec.target)
@@ -235,6 +239,8 @@ def main(unused_args):
         METRICS_RESULTS[pruner_spec.target] = layer_results
         with open(save_file_path, 'wb') as f:
             pickle.dump(METRICS_RESULTS, f, pickle.HIGHEST_PROTOCOL)
+        if not FLAGS.keep_all_checkpoints:
+            tf.gfile.DeleteRecursively(curr_output_dir_name)
     print("")
     print("DONE!")
 
