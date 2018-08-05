@@ -243,7 +243,7 @@ class FilterPruner(object):
                 raise ValueError("Only Conv nodes can be prunned with the"
                                  " FilterPruner compressor.")
             # Prune the current conv we are dealing with
-            if not self.soft_apply and source_node_name:
+            if source_node_name:
                 source_node_idxs = pruned_node_idxs[source_node_name]
             else:
                 source_node_idxs = None
@@ -302,34 +302,37 @@ class FilterPruner(object):
         curr_node = self.nodes_map[curr_node_name]
         next_node_names = self._get_neighbours(curr_node_name)
 
-        # If not conv, we skip since we only deal with
-        # convs and djecent convs and proceding batch norms
-        if curr_node_name in self.init_pruner_specs.keys():
-            pruner_spec = self.init_pruner_specs[curr_node_name]
-            self.pruner_specs.append(pruner_spec)
-
-            print('\x1b[6;30;42m'+'Currently on `%s`\x1b[0m' %curr_node_name)
-            print(" - Added from INIT_PRUNER_SPEC")
-            for name in pruner_spec.following:
-                print(" - Following: " + name)
-
-        elif curr_node.op == "Conv2D":
-            # Create filter spec from traversal
-            dependant_nodes = self._get_following_bn_and_conv_names(
-                    curr_node_name)
-            if dependant_nodes is not None and len(dependant_nodes) > 0:
-                pruner_spec = self._make_pruner_spec(
-                    curr_node_name, following=dependant_nodes)
+        if curr_node_name not in self.skippable_nodes:
+            # If not conv, we skip since we only deal with
+            # convs and djecent convs and proceding batch norms
+            if curr_node_name in self.init_pruner_specs.keys():
+                pruner_spec = self.init_pruner_specs[curr_node_name]
                 self.pruner_specs.append(pruner_spec)
 
                 print('\x1b[6;30;42m'+'Currently on `%s`\x1b[0m' %curr_node_name)
-                print(" - Added from CREATED_PRUNER_SPEC")
+                print(" - Added from INIT_PRUNER_SPEC")
                 for name in pruner_spec.following:
                     print(" - Following: " + name)
+
+            elif curr_node.op == "Conv2D":
+                # Create filter spec from traversal
+                dependant_nodes = self._get_following_bn_and_conv_names(
+                        curr_node_name)
+                if dependant_nodes is not None and len(dependant_nodes) > 0:
+                    pruner_spec = self._make_pruner_spec(
+                        curr_node_name, following=dependant_nodes)
+                    self.pruner_specs.append(pruner_spec)
+
+                    print('\x1b[6;30;42m'+'Currently on `%s`\x1b[0m' %curr_node_name)
+                    print(" - Added from CREATED_PRUNER_SPEC")
+                    for name in pruner_spec.following:
+                        print(" - Following: " + name)
+                else:
+                    print('\x1b[6;30;43m'+'Skipping last Conv `%s`\x1b[0m' %curr_node_name)
             else:
-                print('\x1b[6;30;43m'+'Skipping last Conv `%s`\x1b[0m' %curr_node_name)
+                print("Currently on {}, skipping...".format(curr_node_name))
         else:
-            print("Currently on {}, skipping...".format(curr_node_name))
+            print("Currently on {}, node in skip list, skipping...".format(curr_node_name))
 
         # Traverse adjacent nodes
         for next_node in next_node_names:

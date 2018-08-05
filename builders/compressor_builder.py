@@ -17,7 +17,11 @@ def _build_filter_pruning_compressor(filter_pruning_config, skippable_nodes,
                                      soft_apply):
     input_node_name = filter_pruning_config.input.name
     output_node_name = filter_pruning_config.output.name
-    # compression_factor = filter_pruning_config.compression_factor
+    # skippable_nodes
+    config_skip_nodes = []
+    for skip_node in filter_pruning_config.skip_node:
+        config_skip_nodes.append(skip_node.name)
+    config_skip_nodes += skippable_nodes
     # Get prespecified pruner specs for complex nodes pruning schemes
     pruner_specs = {}
     nonoveride_complete_scope = functools.partial(
@@ -44,7 +48,7 @@ def _build_filter_pruning_compressor(filter_pruning_config, skippable_nodes,
                           output_node=output_node_name,
                           compression_factor=compression_factor,
                           init_pruner_specs=pruner_specs,
-                          skippable_nodes=skippable_nodes,
+                          skippable_nodes=config_skip_nodes,
                           interactive_mode=interactive_mode,
                           soft_apply=soft_apply)
     return pruner

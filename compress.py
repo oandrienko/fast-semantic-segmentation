@@ -70,6 +70,10 @@ flags.DEFINE_string('skippable_nodes', '',
 flags.DEFINE_boolean('interactive', False,
                      'Whether the input files are in binary format.')
 
+flags.DEFINE_boolean('soft_apply', False,
+                     'Simulate compression by setting weights to zero but '
+                     'keeping the original shape of each variable.')
+
 
 def main(unused_args):
     if not tf.gfile.Exists(FLAGS.input_graph):
@@ -89,7 +93,8 @@ def main(unused_args):
         compression_factor=FLAGS.compression_factor,
         skippable_nodes=skippable_nodes,
         compression_config=compression_strategy_config,
-        interactive_mode=FLAGS.interactive)
+        interactive_mode=FLAGS.interactive,
+        soft_apply=FLAGS.soft_apply)
 
     input_graph_def = tf.GraphDef()
     mode = "rb" if FLAGS.input_binary else "r"

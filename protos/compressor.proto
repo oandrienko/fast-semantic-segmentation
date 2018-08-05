@@ -8,7 +8,9 @@ message CommpressionConfig {
 
 message CompressionStrategy {
     oneof compression_strategy {
+
         FilterPruner filter_pruner = 1;
+
     }
 }
 
@@ -22,7 +24,9 @@ message FilterPruner {
 
     optional float compression_factor = 4 [ default = 0.5 ];
 
-    repeated SingleNodePruningSpec node = 5;
+    repeated NodeName skip_node = 5;
+
+    repeated SingleNodePruningSpec node = 6;
 
 }
 
