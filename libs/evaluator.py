@@ -21,22 +21,25 @@ def create_evaluation_input(create_input_dict_fn,
                             input_width,
                             cropped_eval=False):
     input_dict = create_input_dict_fn()
-    # We evaluate on a random cropped of the validation set.
     if cropped_eval:
+        # We evaluate on a random cropped of the validation set.
         cropper_fn = functools.partial(preprocessor.random_crop,
                        crop_height=input_height,
                        crop_width=input_width)
-        input_dict = preprocessor.preprocess_runner(
+        output_dict = preprocessor.preprocess_runner(
                 input_dict, func_list=[cropper_fn])
+        processed_labels = tf.to_float(output_dict[dataset_builder._LABEL_FIELD])
     else:
+        # Here we only pad input image, then we shrink back the prediction
         padding_fn = functools.partial(preprocessor.pad_to_specific_size,
                         height_to_set=input_height,
                         width_to_set=input_width)
-        input_dict = preprocessor.preprocess_runner(
-                input_dict, func_list=[padding_fn])
-    # Output labels ready for inference
-    processed_images = tf.to_float(input_dict[dataset_builder._IMAGE_FIELD])
-    processed_labels = tf.to_float(input_dict[dataset_builder._LABEL_FIELD])
+        output_dict = preprocessor.preprocess_runner(
+                input_dict, skip_labels=True, func_list=[padding_fn])
+        import pdb; pdb.set_trace()
+        processed_labels = tf.to_float(input_dict[dataset_builder._LABEL_FIELD])
+    processed_images = tf.to_float(output_dict[dataset_builder._IMAGE_FIELD])
+    import pdb; pdb.set_trace()
     return processed_images, processed_labels
 
 
@@ -48,12 +51,23 @@ def create_predictions_and_labels(model, create_input_dict_fn,
     # Setup a queue for feeding to slim evaluation helpers
     input_queue = prefetch_queue.prefetch_queue(eval_input_pair)
     eval_images, eval_labels = input_queue.dequeue()
-    eval_images = tf.expand_dims(eval_images, 0)
     eval_labels = tf.expand_dims(eval_labels, 0)
+    eval_images = tf.expand_dims(eval_images, 0)
     # Main predictions
     mean_subtracted_inputs = model.preprocess(eval_images)
     model.provide_groundtruth(eval_labels)
     output_dict = model.predict(mean_subtracted_inputs)
+
+    # Awkward fix from preprocessing step - we resize back down to label shape
+    if not cropped_eval:
+        import pdb; pdb.set_trace()
+        eval_labels_shape = eval_labels.get_shape().as_list()
+        padded_predictions = output_dict[model.main_class_predictions_key]
+        padded_predictions = tf.image.resize_bilinear(padded_predictions,
+            size=eval_labels_shape[1:3],
+            align_corners=True)
+        output_dict[model.main_class_predictions_key] = padded_predictions
+
     # Output graph def for pruning
     if eval_dir is not None:
         graph_def = tf.get_default_graph().as_graph_def()

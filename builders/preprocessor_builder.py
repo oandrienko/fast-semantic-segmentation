@@ -67,9 +67,11 @@ def pad_to_specific_size(images,
         padded_images.set_shape(fixed_input_tensor_shape)
         fixed_label_tensor_shape = (
             height_to_set, width_to_set, labels_channel_dim)
-        padded_labels = tf.image.pad_to_bounding_box(
-                            labels, 0, 0, height_to_set, width_to_set)
-        padded_labels.set_shape(fixed_label_tensor_shape)
+        padded_labels = None
+        if labels is not None:
+            padded_labels = tf.image.pad_to_bounding_box(
+                                labels, 0, 0, height_to_set, width_to_set)
+            padded_labels.set_shape(fixed_label_tensor_shape)
         return padded_images, padded_labels
 
 
@@ -295,7 +297,7 @@ def random_horizontal_flip(images,
         return flipped_images, flipped_labels
 
 
-def preprocess_runner(tensor_dict, func_list, preprocess_vars_cache=None):
+def preprocess_runner(tensor_dict, func_list, skip_labels=False, preprocess_vars_cache=None):
     if dataset_builder._IMAGE_FIELD not in tensor_dict \
                 or dataset_builder._LABEL_FIELD not in tensor_dict:
         raise ValueError('"tensor_dict" must have both image'
@@ -311,20 +313,28 @@ def preprocess_runner(tensor_dict, func_list, preprocess_vars_cache=None):
         preprocess_vars_cache = {}
 
     images = tf.to_float(tensor_dict[dataset_builder._IMAGE_FIELD])
-    labels = tf.to_float(tensor_dict[dataset_builder._LABEL_FIELD])
     images_shape = tf.shape(images)
-    labels_shape = tf.shape(labels)
-    shape_assert = tf.Assert(
-        tf.equal(images_shape, labels_shape),
-        ["Label and Image shape must match"])
+    # For now, we skip labels preprocessing for eval only, since we
+    # do whole image evaluation
+    # TODO: Fix this so it doesn't break for training
+    import pdb; pdb.set_trace()
+    labels = None
+    if not skip_labels:
+        labels = tf.to_float(tensor_dict[dataset_builder._LABEL_FIELD])
+        labels_shape = tf.shape(labels)
+        shape_assert = tf.Assert(
+            tf.equal(images_shape, labels_shape),
+            ["Label and Image shape must match"])
+
+    # Apple proprocessor functions
     for preprocessor_step_func in func_list:
         images, labels = preprocessor_step_func(images=images, labels=labels,
                         preprocess_vars_cache=preprocess_vars_cache)
 
-    tensor_dict[dataset_builder._IMAGE_FIELD] = images
-    tensor_dict[dataset_builder._LABEL_FIELD] = labels
-
-    return tensor_dict
+    output_dict = {}
+    output_dict[dataset_builder._IMAGE_FIELD] = images
+    output_dict[dataset_builder._LABEL_FIELD] = labels
+    return output_dict
 
 
 def build(preprocessor_config_list):
