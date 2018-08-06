@@ -36,10 +36,8 @@ def create_evaluation_input(create_input_dict_fn,
                         width_to_set=input_width)
         output_dict = preprocessor.preprocess_runner(
                 input_dict, skip_labels=True, func_list=[padding_fn])
-        import pdb; pdb.set_trace()
         processed_labels = tf.to_float(input_dict[dataset_builder._LABEL_FIELD])
     processed_images = tf.to_float(output_dict[dataset_builder._IMAGE_FIELD])
-    import pdb; pdb.set_trace()
     return processed_images, processed_labels
 
 
