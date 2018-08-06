@@ -58,7 +58,6 @@ def create_predictions_and_labels(model, create_input_dict_fn,
 
     # Awkward fix from preprocessing step - we resize back down to label shape
     if not cropped_eval:
-        import pdb; pdb.set_trace()
         eval_labels_shape = eval_labels.get_shape().as_list()
         padded_predictions = output_dict[model.main_class_predictions_key]
         padded_predictions = tf.image.resize_bilinear(padded_predictions,

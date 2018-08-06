@@ -12,6 +12,7 @@ from tensorflow.python.tools.freeze_graph import freeze_graph_with_def_protos
 
 from protos import pipeline_pb2
 from builders import model_builder
+from libs.exporter import deploy_segmentation_inference_graph
 
 
 slim = tf.contrib.slim
@@ -21,13 +22,9 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('input_shape', None,
-                    'If input_type is `image_tensor`, this can explicitly set '
-                    'the shape of this input tensor to a fixed size. The '
-                    'dimensions are to be provided as a comma-separated list '
-                    'of integers. A value of -1 can be used for unknown '
-                    'dimensions. If not specified, for an `image_tensor, the '
-                    'default shape will be partially specified as '
-                    '`[None, None, None, 3]`.')
+                    'The shape to use for the placeholder tensor. This should '
+                    'be in the form of [batch, height, width, channels] or '
+                    '[height, width, channels].')
 
 flags.DEFINE_string('config_path', None,
                     'Path to a pipeline_pb2.TrainEvalPipelineConfig config '
@@ -38,38 +35,6 @@ flags.DEFINE_string('trained_checkpoint', None,
                     'path/to/model.ckpt')
 
 flags.DEFINE_string('output_dir', None, 'Path to write outputs.')
-
-
-def _get_outputs_from_inputs(input_tensors, model,
-                             output_collection_name):
-    inputs = tf.to_float(input_tensors)
-    preprocessed_inputs = model.preprocess(inputs)
-    outputs_dict = model.predict(preprocessed_inputs)
-    output_tensors = outputs_dict['class_predictions']
-    prediction_tensor = tf.argmax(output_tensors, 3)
-    final_op = tf.identity(prediction_tensor,
-        name=output_collection_name)
-    return final_op
-
-
-def _image_tensor_input_placeholder(input_shape=None):
-    if input_shape is None:
-        input_shape = (None, None, None, 3)
-    input_tensor = tf.placeholder(
-        dtype=tf.uint8, shape=input_shape, name='inputs')
-    return input_tensor, input_tensor
-
-
-def _build_segmentation_inference_graph(model, input_shape,
-                                        output_collection_name):
-    (placeholder_tensor,
-        input_tensors) = _image_tensor_input_placeholder(input_shape)
-    outputs = _get_outputs_from_inputs(
-        input_tensors=input_tensors,
-        model=model,
-        output_collection_name=output_collection_name)
-    slim.get_or_create_global_step()
-    return outputs, placeholder_tensor
 
 
 def write_graph_and_checkpoint(inference_graph_def,
@@ -118,9 +83,7 @@ def export_inference_graph(pipeline_config, trained_checkpoint_prefix,
     saved_model_path = os.path.join(output_directory, 'saved_model')
     model_path = os.path.join(output_directory, 'model.ckpt')
 
-    # import pdb;pdb.set_trace()
-
-    outputs, placeholder_tensor = _build_segmentation_inference_graph(
+    outputs, placeholder_tensor = deploy_segmentation_inference_graph(
         model=segmentation_model,
         input_shape=input_shape,
         output_collection_name=output_collection_name)
