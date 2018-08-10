@@ -5,7 +5,7 @@ the project. Any supporting scripts such as trainers, evaluators and
 exporters should only call the methods defined in the abstract class.
 
 The general order of using the models implementing this abstract class can be
-asfollowed for both training and evaluation
+as followed for both training and evaluation
 
 Training flow:
 inputs -> preprocess -> predict -> loss -> outputs
@@ -35,18 +35,14 @@ class FastSegmentationModel(object):
     def num_classes(self):
         return self._num_classes
 
-    def groundtruth_has_field(self, field_name):
-        """Check if a ground truth image exists for a given input"""
-        return field_name in self._groundtruth_lists
-
     @abstractmethod
     def preprocess(self, inputs):
         """Proprocessing call for input images.
 
         This method should be used for any preprocessing to be done before
         running a prediction. Primarily would be used for image resizing
-        and zero centering
-        if a model requires it.
+        and zero centering if a model requires it.
+
         Args:
           inputs: a [batch, height_in, width_in, channels] float32 tensor
             representing a batch of images with values between 0 and 255.0.
@@ -61,9 +57,8 @@ class FastSegmentationModel(object):
     def predict(self, preprocessed_inputs, true_image_shapes):
         """Run model inference on a set of input images.
 
-        When training, the output should be passed to the loss method. However
-        when deploying or evaluating, the output should be passed to the
-        preprocessor method.
+        When training, the output should be passed to the loss method
+
         Args:
           preprocessed_inputs: a [batch, height, width, channels] float32
             tensor representing a batch of images.
@@ -75,10 +70,10 @@ class FastSegmentationModel(object):
 
     @abstractmethod
     def loss(self, prediction_dict, true_image_shapes):
-        """Using the groundtruth, computes a loss tensor to be used for training
+        """Using the groundtruth, computes a loss tensor to be used for training.
 
-        Note that the class must have been suplied the groundtruth tensors
-        first with the provide groundtruth methode.
+        Note that the class must have been supplied the groundtruth tensors
+        first with the provide groundtruth method.
 
         Args:
           prediction_dict: a dictionary holding predicted tensors.

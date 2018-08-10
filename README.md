@@ -11,7 +11,7 @@ also taken from their previous PSPNet paper, [Pyramid Scene Parsing Network](htt
 ). The Network Compression implemented is based on the paper [Pruning Filters for Efficient ConvNets](https://arxiv.org/abs/1608.08710
 ).
 
-Various modifications had to be made to the original architecture in order to facilitate the reproduction of the training process. More can be read about this <a href='docs/models.md#modifications#L100'>here</a>.
+Various modifications had to be made to the original architecture in order to facilitate the reproduction of the training process. More can be read about this <a href='docs/models.md'>here</a>.
 
 *Disclaimer:* **This project is still a work in progress**. I have had trouble reproducing the compression described in the original paper. As of now, I have reproduced the paper's reported accuracy with half of the compression rate that was original used in the work. Will keep updating this repository as my results improve. If you successfully reproduce the results with the help of this repository, please contact me and I will add you as a maintainer!
 
@@ -29,6 +29,10 @@ In order to achieve real-time speeds, ICNet uses a form of network compression c
 
 The compression is working, however which "compression scheme" to use is still somewhat ambiguous when reading the original ICNet paper. This is still a work in progress. Read more about compression <a href='docs/compression.md'>here</a>.
 
+<p align = 'center'>
+<img src = 'docs/imgs/icnet_tensorboard.jpg' width='180x'>
+</p>
+<p align = 'center'>ICNet model in Tensorboard</p>
 
 ## Documentation
 
@@ -97,10 +101,10 @@ python export.py \
 
 This project and it's documentation was highly based on the *Tensorflow Object Detection API*. It was the initial inspiration for this project. The `third_party` directory of this project contains files from *OpenAI's Gradient Checkpointing* project by Tim Salimans and Yaroslav Bulatov. The helper modules found in `third_party/model_deploy.py` are from the Tensorflow Slim project. Finally, I used another open source ICNet implementation which converts the original ICNet weights as a reference implementation. Find all these projects below:
 
-* [Tensorflow Object Detection API] (https://github.com/tensorflow/models/tree/master/research/object_detection)
+* [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection)
 * [Saving memory using gradient-checkpointing](https://github.com/openai/gradient-checkpointing)
-* [Tensorflow Slim] (https://github.com/tensorflow/models/tree/master/research/slim)
-* [ICNet project which uses Caffe2Tensorflow] (https://github.com/hellochick/ICNet-tensorflow)
+* [Tensorflow Slim](https://github.com/tensorflow/models/tree/master/research/slim)
+* [ICNet project which uses Caffe2Tensorflow](https://github.com/hellochick/ICNet-tensorflow)
 
 ## Thanks
 
