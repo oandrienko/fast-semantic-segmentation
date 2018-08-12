@@ -17,9 +17,9 @@ eval_input_reader { ... }
 The easiest way to get starting with your own configs is to modify the sample config located at `configs/sample_icnet_resnet_v1.config`.
 
 
-## Finetuning
+## Fine-tuning
 
-### Finetune from *ResNet-50* ImageNet weights
+### Fine-tune ICNet from *ResNet-50* ImageNet weights
 
 If you wish to train ICNet from the original *ResNet50* weights as done by the author of ICNet, you must first download the associated TF Slim *ResNet50* model checkpoints and add point to them in your config file.
 
@@ -43,7 +43,7 @@ train_config: {
 }
 ```
 
-### Finetune from Cityscapes weights
+### Fine-tune ICNet from Cityscapes weights
 
 If you wish to use the supplied Cityscapes checkpoints and fine-tune on your own data, then you must specify the `fine_tune_checkpoint_type` field as segmentation. Your config should be in the form
 

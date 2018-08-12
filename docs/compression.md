@@ -4,4 +4,5 @@ A vital component too achieve real-time performance with ICNet is network compre
 
 ## Compression for ICNet
 
-More to come soon ...
+
+[ To be updated... ]

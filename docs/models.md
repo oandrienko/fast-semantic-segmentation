@@ -1,4 +1,4 @@
-# ICNet Model Checkpoints
+# Model Checkpoints
 
 This project provides ICNet weights in the form of Tensorflow checkpoints trained on Cityscapes for you to get started fine-tuning your own models.
 
@@ -7,7 +7,7 @@ It is important to note that the ICNet model implemented in this project does no
 
 To get past this hurdle, I used the open source implementation of ResNet found in TF Slim. Additionally, the ICNet implementation in this project has the second branch stem out from different layer than the original model. However, please note that these modifications are minor and are not major changes.
 
-## Cityscapes-trained models
+## Cityscapes-trained ICNet models
 
 The table below contains a download link aswell as information about the model. The listed information is:
 
@@ -17,6 +17,6 @@ The table below contains a download link aswell as information about the model. 
 
 | Model name  | Cityscapes mIoU | Compression Factor | MACs | Outputs |
 | ------------ | :--------------: | :--------------: | :-------------: | :-------------: |
-| [XXX](XXX) | XX% | XX | XXM | Semantic Segmentation |
+| [...](XXX) | ... | ... | ... | Semantic Segmentation |
 
-More coming soon...
+[ To be updated... ]
