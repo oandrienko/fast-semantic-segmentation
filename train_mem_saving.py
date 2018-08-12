@@ -2,17 +2,17 @@ r"""Train with gradient checkpointing
 
 Allows for training with larger batch size than would normally be
 permitted. Used to train PSPNet and ICNet to facilitate the required
-batch size of 16. Also facilites measuring memory usage. Thanks to Yaroslav
+batch size of 16. Also facilities measuring memory usage. Thanks to Yaroslav
 Bulatov and Tim Salimans for their gradient checkpointing implementation.
 Their implementation can be found here:
     https://github.com/openai/gradient-checkpointing
 
 For ICNet, the suggested checkpoint nodes are:
 
-    'SharedFeatureExtractor/resnet_v1_50/block1/unit_3/bottleneck_v1/Relu:0'
-    'SharedFeatureExtractor/resnet_v1_50/block2/unit_4/bottleneck_v1/Relu:0'
-    'SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu:0'
-    'SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu:0'
+    'SharedFeatureExtractor/resnet_v1_50/block1/unit_3/bottleneck_v1/Relu'
+    'SharedFeatureExtractor/resnet_v1_50/block2/unit_4/bottleneck_v1/Relu'
+    'SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu'
+    'SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu'
     'FastPSPModule/Conv/Relu6:0'
 
 Tested on Titan Xp.
@@ -105,15 +105,14 @@ flags.DEFINE_integer('save_interval_secs', 600, # default to 5 min
 flags.DEFINE_integer('max_checkpoints_to_keep', 50, # might want to cut this down
                      'Number of checkpoints to keep in the `logdir`.')
 
+flags.DEFINE_string('checkpoint_nodes', None,
+                    'Names of nodes to use as checkpoint nodes for training.')
+
 # Debug flag
 
 flags.DEFINE_boolean('log_memory', False, '')
 
-flags.DEFINE_boolean('test_image_summaries', False, '')
-
-flags.DEFINE_boolean('tmp_icnet_branch_summaries', False, 'temp flag')
-
-flags.DEFINE_boolean('tmp_psp_pretrain_summaries', False, 'temp flag')
+flags.DEFINE_boolean('image_summaries', False, '')
 
 
 def main(_):
@@ -138,6 +137,12 @@ def main(_):
 
     is_chief = (FLAGS.task == 0)
 
+    checkpoint_nodes = FLAGS.checkpoint_nodes
+    if checkpoint_nodes is None:
+        checkpoint_nodes = ICNET_GRADIENT_CHECKPOINTS
+    else:
+        checkpoint_nodes = checkpoint_nodes.replace(" ", "").split(",")
+
     train_segmentation_model(
         create_model_fn,
         create_input_fn,
@@ -155,9 +160,9 @@ def main(_):
         num_ps_tasks=FLAGS.num_ps_tasks,
         max_checkpoints_to_keep=FLAGS.max_checkpoints_to_keep,
         save_interval_secs=FLAGS.save_interval_secs,
-        image_summaries=FLAGS.test_image_summaries,
+        image_summaries=FLAGS.image_summaries,
         log_memory=FLAGS.log_memory,
-        gradient_checkpoints=ICNET_GRADIENT_CHECKPOINTS)
+        gradient_checkpoints=checkpoint_nodes)
 
 
 if __name__ == '__main__':

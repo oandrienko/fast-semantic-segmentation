@@ -111,44 +111,6 @@ def _compute_new_static_size(image, min_dimension, max_dimension):
     return tf.constant(new_size + [num_channels])
 
 
-def _compute_new_dynamic_size(image, min_dimension, max_dimension):
-    """Compute new dynamic shape for resize_to_range method."""
-    image_shape = tf.shape(image)
-    orig_height = tf.to_float(image_shape[0])
-    orig_width = tf.to_float(image_shape[1])
-    num_channels = image_shape[2]
-    orig_min_dim = tf.minimum(orig_height, orig_width)
-    # Calculates the larger of the possible sizes
-    min_dimension = tf.constant(min_dimension, dtype=tf.float32)
-    large_scale_factor = min_dimension / orig_min_dim
-    # Scaling orig_(height|width) by large_scale_factor will make the smaller
-    # dimension equal to min_dimension, save for floating point rounding errors.
-    # For reasonably-sized images, taking the nearest integer will reliably
-    # eliminate this error.
-    large_height = tf.to_int32(tf.round(orig_height * large_scale_factor))
-    large_width = tf.to_int32(tf.round(orig_width * large_scale_factor))
-    large_size = tf.stack([large_height, large_width])
-    if max_dimension:
-        # Calculates the smaller of the possible sizes, use that if the larger
-        # is too big.
-        orig_max_dim = tf.maximum(orig_height, orig_width)
-        max_dimension = tf.constant(max_dimension, dtype=tf.float32)
-        small_scale_factor = max_dimension / orig_max_dim
-        # Scaling orig_(height|width) by small_scale_factor will make the larger
-        # dimension equal to max_dimension, save for floating point rounding
-        # errors. For reasonably-sized images, taking the nearest integer will
-        # reliably eliminate this error.
-        small_height = tf.to_int32(tf.round(orig_height * small_scale_factor))
-        small_width = tf.to_int32(tf.round(orig_width * small_scale_factor))
-        small_size = tf.stack([small_height, small_width])
-        new_size = tf.cond(
-            tf.to_float(tf.reduce_max(large_size)) > max_dimension,
-            lambda: small_size, lambda: large_size)
-    else:
-        new_size = large_size
-    return tf.stack(tf.unstack(new_size) + [num_channels])
-
-
 def resize_to_range(image,
                     label=None,
                     min_dimension=None,
@@ -317,7 +279,6 @@ def preprocess_runner(tensor_dict, func_list, skip_labels=False, preprocess_vars
     # For now, we skip labels preprocessing for eval only, since we
     # do whole image evaluation
     # TODO: Fix this so it doesn't break for training
-    import pdb; pdb.set_trace()
     labels = None
     if not skip_labels:
         labels = tf.to_float(tensor_dict[dataset_builder._LABEL_FIELD])

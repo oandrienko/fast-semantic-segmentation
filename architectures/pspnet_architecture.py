@@ -108,7 +108,7 @@ class PSPNetArchitecture(model.FastSegmentationModel):
             full_pool_in = slim.avg_pool2d(input_features,
                     [input_h, input_w], stride=[input_h, input_w])
             full_pool_conv = slim.conv2d(full_pool_in,
-                    512//self._filter_scale, (1, 1),
+                    512, (1, 1),
                     stride=1, normalizer_fn=slim.batch_norm)
             full_pool = tf.image.resize_bilinear(full_pool_conv,
                     size=(input_h, input_w), align_corners=True)
@@ -116,7 +116,7 @@ class PSPNetArchitecture(model.FastSegmentationModel):
             half_pool_in = slim.avg_pool2d(input_features,
                     [input_h/2, input_w/2], stride=[input_h/2, input_w/2])
             half_pool_conv = slim.conv2d(half_pool_in,
-                    512//self._filter_scale, (1, 1),
+                    512, (1, 1),
                     stride=1, normalizer_fn=slim.batch_norm)
             half_pool = tf.image.resize_bilinear(half_pool_conv,
                     size=(input_h, input_w), align_corners=True)
@@ -124,7 +124,7 @@ class PSPNetArchitecture(model.FastSegmentationModel):
             third_pool_in = slim.avg_pool2d(input_features,
                     [input_h/3, input_w/3], stride=[input_h/3, input_w/3])
             third_pool_conv = slim.conv2d(third_pool_in,
-                    512//self._filter_scale, (1, 1),
+                    512, (1, 1),
                     stride=1, normalizer_fn=slim.batch_norm)
             third_pool = tf.image.resize_bilinear(third_pool_conv,
                     size=(input_h, input_w), align_corners=True)
@@ -132,15 +132,16 @@ class PSPNetArchitecture(model.FastSegmentationModel):
             forth_pool_in = slim.avg_pool2d(input_features,
                     [input_h/6, input_w/6], stride=[input_h/6, input_w/6])
             forth_pool_conv = slim.conv2d(forth_pool_in,
-                    512//self._filter_scale, (1, 1),
+                    512, (1, 1),
                     stride=1, normalizer_fn=slim.batch_norm)
             forth_pool = tf.image.resize_bilinear(forth_pool_conv,
                     size=(input_h, input_w), align_corners=True)
             # concat all
             branch_merge = tf.concat([input_features, full_pool,
-                                     half_pool, third_pool, forth_pool])
+                                     half_pool, third_pool, forth_pool],
+                                     axis=-1)
             output = slim.conv2d(branch_merge,
-                    512//self._filter_scale, (3, 3),
+                    512, (3, 3),
                     stride=1, normalizer_fn=slim.batch_norm)
             return output
 
@@ -174,16 +175,17 @@ class PSPNetArchitecture(model.FastSegmentationModel):
 
         main_preds = prediction_dict[self.main_class_predictions_key]
         with tf.name_scope('SegmentationLoss'): # 1/8th labels
-            main_scaled_labels = self._resize_labels_to_logits(
+            main_scaled_labels = _resize_labels_to_logits(
                 self._groundtruth_labels, main_preds)
             main_loss = self._classification_loss(main_preds,
                                             main_scaled_labels)
-            losses_dict[self.main_loss_key] = (main_loss * self._main_loss_weight)
+            losses_dict[self.main_loss_key] = (
+                self._main_loss_weight * main_loss)
 
         if self._use_aux_loss and self._is_training:
             aux_preds = prediction_dict[self.aux_predictions_key]
             with tf.name_scope('AuxLoss'): # 1/8th labels
-                aux_scaled_labels = self._resize_labels_to_logits(
+                aux_scaled_labels = _resize_labels_to_logits(
                     self._groundtruth_labels, aux_preds)
                 first_aux_loss = self._classification_loss(aux_preds,
                                                         aux_scaled_labels)

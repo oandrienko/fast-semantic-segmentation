@@ -3,27 +3,20 @@ r""" Prune weights from checkpoint file.
 When training a model with, your training directory will
 containing a GraphDef file (usually ending with the .pb or .pbtxt extension)
 and a set of checkpoint files. We load both here and output a pruned
-version of the GraphDeg and checkpoint file.
+version of the GraphDef and checkpoint file.
 
-Based on the paper:
+As described in https://arxiv.org/abs/1608.08710.
+  Pruning Filters for Efficient ConvNets
+  Hao Li, Asim Kadav, Igor Durdanovic, Hanan Samet, Hans Peter Graf
 
 Usage:
 
-prune_weights.py \
---input_graph=/tmp/model/my_graph.pb \
---input_checkpoint=/tmp/model/model.ckpt-1000 \
---output_graph=/tmp/frozen_graph.pb \
---output_node_names=output_node \
-
-TEMP Example:
-
     python compress.py \
-        --input_graph=tmp/weights/prediction_graph.pbtxt \
-        --input_checkpoint=tmp/weights/model.ckpt-57021 \
-        --output_dir=tmp/weights_pruned \
-        --config_path=configs/icnet_resnet_v1_pruner.config \
-        --skippable_nodes="Predictions/postrain/biases"
-
+        --input_graph /tmp/models/prediction_graph.pbtxt \
+        --input_checkpoint /tmp/models/model.ckpt-XYZ \
+        --output_dir /tmp/pruned_model \
+        --config_path configs/compression/icnet_resnet_v1_prune_all.config \
+        --skippable_nodes "Predictions/postrain/biases"
 """
 from __future__ import absolute_import
 from __future__ import division

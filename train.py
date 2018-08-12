@@ -67,11 +67,7 @@ flags.DEFINE_integer('max_checkpoints_to_keep', 15, # might want to cut this dow
 
 # Debug flag
 
-flags.DEFINE_boolean('test_image_summaries', False, '')
-
-flags.DEFINE_boolean('tmp_icnet_branch_summaries', False, 'temp flag')
-
-flags.DEFINE_boolean('tmp_psp_pretrain_summaries', False, 'temp flag')
+flags.DEFINE_boolean('image_summaries', False, '')
 
 
 def main(_):
@@ -113,9 +109,7 @@ def main(_):
         num_ps_tasks=FLAGS.num_ps_tasks,
         max_checkpoints_to_keep=FLAGS.max_checkpoints_to_keep,
         save_interval_secs=FLAGS.save_interval_secs,
-        image_summaries=FLAGS.test_image_summaries,
-        tmp_icnet_branch_summaries=FLAGS.tmp_icnet_branch_summaries,
-        tmp_psp_pretrain_summaries=FLAGS.tmp_psp_pretrain_summaries)
+        image_summaries=FLAGS.image_summaries)
 
 
 if __name__ == '__main__':

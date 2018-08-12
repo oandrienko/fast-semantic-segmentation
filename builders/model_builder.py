@@ -30,7 +30,8 @@ def _build_pspnet_icnet_extractor(
                                    mid_downsample=mid_downsample,
                                    reuse_weights=reuse_weights)
 
-def _build_pspnet_icnet_model(model_config, is_training, add_summaries):
+def _build_pspnet_icnet_model(model_config, is_training, add_summaries,
+                              build_baseline_psp=False):
     num_classes = model_config.num_classes
     if not num_classes:
         raise ValueError('"num_classes" must be greater than 0.')
@@ -40,8 +41,11 @@ def _build_pspnet_icnet_model(model_config, is_training, add_summaries):
         raise ValueError('"filter_scale" must be in the range (0,1].')
     filter_scale = 1.0 / in_filter_scale
 
-    pretrain_single_branch_mode = model_config.pretrain_single_branch_mode
-    should_downsample_extractor = not pretrain_single_branch_mode
+    should_downsample_extractor = False
+    if not build_baseline_psp:
+        pretrain_single_branch_mode = model_config.pretrain_single_branch_mode
+        should_downsample_extractor = not pretrain_single_branch_mode
+
     feature_extractor = _build_pspnet_icnet_extractor(
             model_config.feature_extractor, filter_scale, is_training,
             mid_downsample=should_downsample_extractor)
@@ -65,18 +69,29 @@ def _build_pspnet_icnet_model(model_config, is_training, add_summaries):
         'add_summaries': add_summaries
     }
 
-    if use_aux_loss:
-        common_kwargs[
-        'main_loss_weight'] = model_config.main_branch_loss_weight
-        common_kwargs[
-        'second_branch_loss_weight'] = model_config.second_branch_loss_weight
-        common_kwargs[
-        'first_branch_loss_weight'] = model_config.first_branch_loss_weight
-
-    return (num_classes, icnet_architecture.ICNetArchitecture(
-                    filter_scale=filter_scale,
-                    pretrain_single_branch_mode=pretrain_single_branch_mode,
-                    **common_kwargs))
+    if not build_baseline_psp:
+        if use_aux_loss:
+            common_kwargs[
+            'main_loss_weight'] = (
+                model_config.main_branch_loss_weight)
+            common_kwargs[
+            'second_branch_loss_weight'] = (
+                model_config.second_branch_loss_weight)
+            common_kwargs[
+            'first_branch_loss_weight'] = (
+                model_config.first_branch_loss_weight)
+        model = (num_classes, icnet_architecture.ICNetArchitecture(
+            filter_scale=filter_scale,
+            pretrain_single_branch_mode=pretrain_single_branch_mode,
+            **common_kwargs))
+    else:
+        if use_aux_loss:
+            # TODO: remove hardcoded values here
+            common_kwargs['main_loss_weight'] = 1.0
+            common_kwargs['aux_loss_weight'] = 0.4
+        model = (num_classes, pspnet_architecture.PSPNetArchitecture(
+            **common_kwargs))
+    return model
 
 
 def build(model_config, is_training, add_summaries=True):
@@ -86,7 +101,9 @@ def build(model_config, is_training, add_summaries=True):
 
     model = model_config.WhichOneof('model')
     if model == 'pspnet':
-        raise ValueError('PSPNet is not fully implemented yet.')
+        return _build_pspnet_icnet_model(
+            model_config.pspnet, is_training, add_summaries,
+            build_baseline_psp=True)
     elif model == 'icnet':
         return _build_pspnet_icnet_model(
             model_config.icnet, is_training, add_summaries)

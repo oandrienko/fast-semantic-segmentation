@@ -115,10 +115,7 @@ def train_segmentation_model(create_model_fn,
                              image_summaries,
                              log_memory=False,
                              gradient_checkpoints=None,
-                             sync_bn_accross_gpu=False,
-                             # TMP
-                             tmp_icnet_branch_summaries=False,
-                             tmp_psp_pretrain_summaries=False):
+                             sync_bn_accross_gpu=False):
     """Create an instance of the FastSegmentationModel"""
     _, segmentation_model = create_model_fn()
     deploy_config = model_deploy.DeploymentConfig(
@@ -249,75 +246,23 @@ def train_segmentation_model(create_model_fn,
             with tf.control_dependencies([update_op]):
                 train_op = tf.identity(total_loss, name='train_op')
 
-##############################################################################################################
-        # TEMPORARY...
+        # TODO: this ideally should not be hardcoded like this.
+        #   should have a way to access the prediction and GT tensor
         if image_summaries:
             graph = tf.get_default_graph()
             pixel_scaling = max(1, 255 // 19)
             summ_first_clone_scope = (first_clone_scope + '/'
                 if first_clone_scope else '')
-            main_in = graph.get_tensor_by_name(
-                    '%sfifo_queue_Dequeue:1' % summ_first_clone_scope)
-            main_gt = graph.get_tensor_by_name(
-                    '%sSegmentationLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
+            main_labels = graph.get_tensor_by_name(
+                '%sSegmentationLoss/Reshape:0'% summ_first_clone_scope)
+            main_preds = graph.get_tensor_by_name(
+                '%sSegmentationLoss/Reshape_1:0'% summ_first_clone_scope)
+            main_preds = tf.cast(main_preds * pixel_scaling, tf.uint8)
             summaries.add(
-              tf.summary.image('VerifyTrainImageInput/Inputs', main_in))
-            main_gt = tf.cast(main_gt * pixel_scaling, tf.uint8)
+              tf.summary.image('VerifyTrainImages/Predictions', main_preds))
+            main_labels = tf.cast(main_labels * pixel_scaling, tf.uint8)
             summaries.add(
-              tf.summary.image('VerifyTrainImageMain/Groundtruths', main_gt))
-
-            if tmp_icnet_branch_summaries:
-                main_out = graph.get_tensor_by_name(
-                    '%sPredictions/postrain/BiasAdd:0' % summ_first_clone_scope)
-                main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
-                main_out = tf.cast(main_out * pixel_scaling, tf.uint8)
-                summaries.add(tf.summary.image('VerifyTrainImageMain/Predictions', main_out))
-
-                aux_out_0 = graph.get_tensor_by_name(
-                        '%sCascadeFeatureFusion_0/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
-                aux_gt_0 = graph.get_tensor_by_name(
-                        '%sFirstBranchAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
-                aux_out_1 = graph.get_tensor_by_name(
-                        '%sCascadeFeatureFusion_1/AuxOutput/BiasAdd:0' % summ_first_clone_scope)
-                aux_gt_1 = graph.get_tensor_by_name(
-                        '%sSecondBranchAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
-                aux_out_0 = tf.expand_dims(tf.argmax(aux_out_0, 3), -1)
-                aux_out_0 = tf.cast(aux_out_0 * pixel_scaling, tf.uint8)
-                summaries.add(
-                  tf.summary.image('VerifyTrainImageFirstBranchAux/Predictions', aux_out_0))
-                aux_gt_0 = tf.cast(aux_gt_0 * pixel_scaling, tf.uint8)
-                summaries.add(
-                  tf.summary.image('VerifyTrainImageFirstBranchAux/Groundtruths', aux_gt_0))
-
-                aux_out_1 = tf.expand_dims(tf.argmax(aux_out_1, 3), -1)
-                aux_out_1 = tf.cast(aux_out_1 * pixel_scaling, tf.uint8)
-                summaries.add(
-                  tf.summary.image('VerifyTrainImageSecondBranchAux/Predictions', aux_out_1))
-                aux_gt_1 = tf.cast(aux_gt_1 * pixel_scaling, tf.uint8)
-                summaries.add(
-                  tf.summary.image('VerifyTrainImageSecondBranchAux/Groundtruths', aux_gt_1))
-
-            if tmp_psp_pretrain_summaries:
-                main_out = graph.get_tensor_by_name(
-                    '%sPredictions/pretrain/BiasAdd:0' % summ_first_clone_scope)
-                main_out = tf.expand_dims(tf.argmax(main_out, 3), -1)
-                main_out = tf.cast(main_out * pixel_scaling, tf.uint8)
-                summaries.add(tf.summary.image('VerifyTrainImageMain/Predictions', main_out))
-
-                aux_out = graph.get_tensor_by_name(
-                        '%sAuxPredictions/Conv/BiasAdd:0' % summ_first_clone_scope)
-                aux_gt = graph.get_tensor_by_name(
-                        '%sPretrainMainAuxLoss/ResizeNearestNeighbor:0' % summ_first_clone_scope)
-                aux_out = tf.expand_dims(tf.argmax(aux_out, 3), -1)
-                aux_out = tf.cast(aux_out * pixel_scaling, tf.uint8)
-                summaries.add(
-                  tf.summary.image('VerifyTrainImagePretrainMainAux/Predictions', aux_out))
-                aux_gt = tf.cast(aux_gt * pixel_scaling, tf.uint8)
-                summaries.add(
-                  tf.summary.image('VerifyTrainImagePretrainMainAux/Groundtruths', aux_gt))
-
-##############################################################################################################
-
+              tf.summary.image('VerifyTrainImages/Groundtruths', main_labels))
 
         # Add the summaries from the first clone. These contain the summaries
         # created by model_fn and either optimize_clones() or _gather_clone_loss().
