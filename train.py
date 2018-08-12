@@ -62,7 +62,7 @@ flags.mark_flag_as_required('logdir')
 flags.DEFINE_integer('save_interval_secs', 600, # default to 5 min
                      'Time between successive saves of a checkpoint in secs.')
 
-flags.DEFINE_integer('max_checkpoints_to_keep', 50, # might want to cut this down
+flags.DEFINE_integer('max_checkpoints_to_keep', 15, # might want to cut this down
                      'Number of checkpoints to keep in the `logdir`.')
 
 # Debug flag

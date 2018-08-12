@@ -104,14 +104,43 @@ class PSPNetArchitecture(model.FastSegmentationModel):
         """PSP Adapted module for ICNet..."""
         with tf.variable_scope('PSPModule'):
             input_n, input_h, input_w, input_c = input_features.get_shape()
-
-            # ...
-            # ???
-            # ...
-
+            # full scale
+            full_pool_in = slim.avg_pool2d(input_features,
+                    [input_h, input_w], stride=[input_h, input_w])
+            full_pool_conv = slim.conv2d(full_pool_in,
+                    512//self._filter_scale, (1, 1),
+                    stride=1, normalizer_fn=slim.batch_norm)
+            full_pool = tf.image.resize_bilinear(full_pool_conv,
+                    size=(input_h, input_w), align_corners=True)
+            # 1/2 scale
+            half_pool_in = slim.avg_pool2d(input_features,
+                    [input_h/2, input_w/2], stride=[input_h/2, input_w/2])
+            half_pool_conv = slim.conv2d(half_pool_in,
+                    512//self._filter_scale, (1, 1),
+                    stride=1, normalizer_fn=slim.batch_norm)
+            half_pool = tf.image.resize_bilinear(half_pool_conv,
+                    size=(input_h, input_w), align_corners=True)
+            # 1/3 scale
+            third_pool_in = slim.avg_pool2d(input_features,
+                    [input_h/3, input_w/3], stride=[input_h/3, input_w/3])
+            third_pool_conv = slim.conv2d(third_pool_in,
+                    512//self._filter_scale, (1, 1),
+                    stride=1, normalizer_fn=slim.batch_norm)
+            third_pool = tf.image.resize_bilinear(third_pool_conv,
+                    size=(input_h, input_w), align_corners=True)
+            # 1/6 scale
+            forth_pool_in = slim.avg_pool2d(input_features,
+                    [input_h/6, input_w/6], stride=[input_h/6, input_w/6])
+            forth_pool_conv = slim.conv2d(forth_pool_in,
+                    512//self._filter_scale, (1, 1),
+                    stride=1, normalizer_fn=slim.batch_norm)
+            forth_pool = tf.image.resize_bilinear(forth_pool_conv,
+                    size=(input_h, input_w), align_corners=True)
+            # concat all
             branch_merge = tf.concat([input_features, full_pool,
                                      half_pool, third_pool, forth_pool])
-            output = slim.conv2d(branch_merge, 999, [1, 1], # ???
+            output = slim.conv2d(branch_merge,
+                    512//self._filter_scale, (3, 3),
                     stride=1, normalizer_fn=slim.batch_norm)
             return output
 
@@ -167,7 +196,8 @@ class PSPNetArchitecture(model.FastSegmentationModel):
         """Restore variables for checkpoints correctly"""
         if fine_tune_checkpoint_type not in [
                     'segmentation', 'classification']:
-            raise ValueError('Not supported fine_tune_checkpoint_type: {}'.format(fine_tune_checkpoint_type))
+            raise ValueError('Not supported fine_tune_checkpoint_type: {}'.format(
+                fine_tune_checkpoint_type))
         if fine_tune_checkpoint_type == 'classification':
             tf.logging.info('Fine-tuning from classification checkpoints.')
             return self._feature_extractor.restore_from_classif_checkpoint_fn(
