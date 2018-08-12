@@ -13,7 +13,10 @@ also taken from their previous PSPNet paper, [Pyramid Scene Parsing Network](htt
 
 Various modifications had to be made to the original architecture in order to facilitate the reproduction of the training process. More can be read about this <a href='docs/models.md'>here</a>.
 
-*Disclaimer:* **This project is still a work in progress**. I have had trouble reproducing the compression described in the original paper. As of now, I have reproduced the paper's reported accuracy with half of the compression rate that was original used in the work. Will keep updating this repository as my results improve. If you successfully reproduce the results with the help of this repository, please contact me and I will add you as a maintainer!
+### Release information
+
+#### August 10, 2018
+Initial release. Project includes scripts for training, evaluating and compressing ICNet from ResNet50 weights. Working on achieving the author's reported accuracy. Will update with links to pre-trained cityscapes checkpoints once the accuracy is matched.
 
 ## Overview
 
