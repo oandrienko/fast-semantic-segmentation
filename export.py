@@ -26,6 +26,10 @@ flags.DEFINE_string('input_shape', None,
                     'be in the form of [batch, height, width, channels] or '
                     '[height, width, channels].')
 
+flags.DEFINE_string('pad_to_shape', None,
+                     'Pad the input image to the specified shape. Must have '
+                     'the shape specified as [height, width].')
+
 flags.DEFINE_string('config_path', None,
                     'Path to a pipeline_pb2.TrainEvalPipelineConfig config '
                     'file.')
@@ -71,12 +75,16 @@ def profile_inference_graph(graph):
         tfprof_options=tfprof_flops_option)
 
 
-def export_inference_graph(pipeline_config, trained_checkpoint_prefix,
-                           output_directory, input_shape=None,
-                           output_collection_name='inference_op'):
+def export_inference_graph(pipeline_config,
+                           trained_checkpoint_prefix,
+                           output_directory,
+                           input_shape=None,
+                           pad_to_shape=None,
+                           output_collection_name='predictions'):
 
-    _, segmentation_model = model_builder.build(pipeline_config.model,
-                                             is_training=False)
+    _, segmentation_model = model_builder.build(
+        pipeline_config.model, is_training=False)
+
     tf.gfile.MakeDirs(output_directory)
     frozen_graph_path = os.path.join(output_directory,
                                    'frozen_inference_graph.pb')
@@ -86,6 +94,7 @@ def export_inference_graph(pipeline_config, trained_checkpoint_prefix,
     outputs, placeholder_tensor = deploy_segmentation_inference_graph(
         model=segmentation_model,
         input_shape=input_shape,
+        pad_to_shape=pad_to_shape,
         output_collection_name=output_collection_name)
 
     profile_inference_graph(tf.get_default_graph())
@@ -126,9 +135,16 @@ def main(_):
     else:
         input_shape = None
 
+    pad_to_shape = None
+    if FLAGS.pad_to_shape:
+        pad_to_shape = [
+            int(dim) if dim != '-1' else None
+            for dim in FLAGS.pad_to_shape.split(',')]
+
     export_inference_graph(pipeline_config,
                            FLAGS.trained_checkpoint,
-                           FLAGS.output_dir, input_shape)
+                           FLAGS.output_dir, input_shape,
+                           pad_to_shape)
 
 
 if __name__ == '__main__':

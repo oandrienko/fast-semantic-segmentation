@@ -37,7 +37,7 @@ To install protoc, the protobuf compiler on Ubuntu, run
 sudo apt-get install protobuf-compiler
 ```
 
-If you are on a Mac, then use brew and run 
+If you are on a Mac, then use brew and run
 
 ```
 brew install protobuf

@@ -35,10 +35,10 @@ Fine-tuning options are specified in training configs. You must modify two field
 ```
 train_config: {
     ...
-    
+
     fine_tune_checkpoint_type: "classification"
     fine_tune_checkpoint: "/tmp/resnet_v1_50.ckpt" # resnet50 weights
-    
+
     ...
 }
 ```
@@ -50,10 +50,10 @@ If you wish to use the supplied Cityscapes checkpoints and fine-tune on your own
 ```
 train_config: {
     ...
-    
+
     fine_tune_checkpoint_type: "segmentation"
     fine_tune_checkpoint: "/tmp/train/model.ckpt-YYYY" # cityscapes weights
-    
+
     ...
 }
 ```

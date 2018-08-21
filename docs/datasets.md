@@ -14,7 +14,7 @@ In order to download the Cityscapes dataset, you must first register with their 
  + gtFine
 ```
 
-Next, in order to generate training labels for the dataset, clone cityScapesScripts project 
+Next, in order to generate training labels for the dataset, clone cityScapesScripts project
 
 ```
 git clone https://github.com/mcordts/cityscapesScripts.git
@@ -53,7 +53,7 @@ For every example in your dataset, you should have the following information:
 
 ### Creating a tf. Example
 
-Each training pair in your semantic segmentation dataset will require a tf. Example proto defined within the record. For example, consider creating one for a single PNG image. This can be done with 
+Each training pair in your semantic segmentation dataset will require a tf. Example proto defined within the record. For example, consider creating one for a single PNG image. This can be done with
 
 ```python
 def create_tf_example(encoded_image, encoded_label, full_image_path):
@@ -64,21 +64,13 @@ def create_tf_example(encoded_image, encoded_label, full_image_path):
 
  Example = tf.train. Example(
  features=tf.train. Features(feature={
- 
  'image/encoded': _bytes_feature(encoded_image),
- 
  'image/filename': _bytes_feature(full_image_path.encode('utf8')),
- 
  'image/height': _int64_feature(height),
- 
  'image/width': _int64_feature(width),
- 
  'image/channels': _int64_feature(3),
- 
  'image/segmentation/class/encoded': _bytes_feature(encoded_label),
- 
  'image/format': _bytes_feature('png'.encode('utf8')),
- 
  'image/segmentation/class/format':_bytes_feature('png'.encode('utf8'))
  }))
  return example
@@ -100,7 +92,7 @@ FLAGS = flags.FLAGS
 def _bytes_feature(values):
  return tf.train. Feature(
  bytes_list=tf.train. BytesList(value=[values]))
- 
+
 Def _int64_feature(values):
  if not is instance(values, (tuple, list)):
  values = [values]
@@ -121,7 +113,7 @@ def create_tf_example(example):
 
  example = tf.train. Example(features=tf.train. Features(feature={
 	 'image/encoded': _bytes_feature(encoded_image),
-	 'image/filename': _bytes_feature(filename.encode('utf8')), 
+	 'image/filename': _bytes_feature(filename.encode('utf8')),
 	 'image/height': _int64_feature(height),
 	 'image/width': _int64_feature(width),
 	 'image/channels': _int64_feature(channels),

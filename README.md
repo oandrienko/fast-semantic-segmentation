@@ -42,11 +42,9 @@ The compression is working, however which "compression scheme" to use is still s
 
 ## Documentation
 
-  * <a href='docs/installation.md'>
-      Installation: Getting the project running on your machine</a><br>
+  * <a href='docs/installation.md'>Installation: Getting the project running on your machine</a><br>
   * <a href="docs/datasets.md">Datasets: Setting up a TFRecord file for training and evaluation</a><br>
   * <a href="docs/configs.md">Configs and Fine-tune Training: Setting up your own configuration files for training and evaluation</a><br>
-  * <a href="docs/compression.md">Compressing ICNet: How I have gone about trying to compress ICNet</a><br>
   * <a href="docs/models.md">Model Zoo: Some information about the models in this project and links to checkpoints</a><br>
 
 ## Quick Start
