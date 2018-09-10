@@ -48,7 +48,7 @@ flags.DEFINE_string('input_graph', '',
 flags.DEFINE_string('input_checkpoint', '',
                     'TensorFlow variables file to load.')
 
-flags.DEFINE_boolean('input_binary', True,
+flags.DEFINE_boolean('input_binary', False,
                      'Whether the input files are in binary format.')
 
 flags.DEFINE_string('output_dir', '',

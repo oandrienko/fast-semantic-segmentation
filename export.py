@@ -88,6 +88,8 @@ def export_inference_graph(pipeline_config,
     tf.gfile.MakeDirs(output_directory)
     frozen_graph_path = os.path.join(output_directory,
                                    'frozen_inference_graph.pb')
+    eval_graphdef_path = os.path.join(output_directory,
+                                    'export_graph.pbtxt')
     saved_model_path = os.path.join(output_directory, 'saved_model')
     model_path = os.path.join(output_directory, 'model.ckpt')
 
@@ -101,6 +103,10 @@ def export_inference_graph(pipeline_config,
 
     saver = tf.train.Saver()
     input_saver_def = saver.as_saver_def()
+
+    graph_def = tf.get_default_graph().as_graph_def()
+    f = tf.gfile.FastGFile(eval_graphdef_path, "w")
+    f.write(str(graph_def))
 
     write_graph_and_checkpoint(
         inference_graph_def=tf.get_default_graph().as_graph_def(),

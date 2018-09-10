@@ -28,7 +28,8 @@ def create_evaluation_input(create_input_dict_fn,
                        crop_width=input_width)
         output_dict = preprocessor.preprocess_runner(
                 input_dict, func_list=[cropper_fn])
-        processed_labels = tf.to_float(output_dict[dataset_builder._LABEL_FIELD])
+        processed_labels = tf.to_float(
+            output_dict[dataset_builder._LABEL_FIELD])
     else:
         # Here we only pad input image, then we shrink back the prediction
         padding_fn = functools.partial(preprocessor.pad_to_specific_size,
@@ -68,7 +69,7 @@ def create_predictions_and_labels(model, create_input_dict_fn,
     # Output graph def for pruning
     if eval_dir is not None:
         graph_def = tf.get_default_graph().as_graph_def()
-        pred_graph_def_path = os.path.join(eval_dir, "prediction_graph.pbtxt")
+        pred_graph_def_path = os.path.join(eval_dir, "eval_graph.pbtxt")
         f = tf.gfile.FastGFile(pred_graph_def_path, "w")
         f.write(str(graph_def))
     # Validation loss to fight overfitting

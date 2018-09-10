@@ -23,22 +23,31 @@ Initial release. Project includes scripts for training ICNet, evaluating ICNet a
 
 ## Overview
 
-### Training from ImageNet Weights
+<p align = 'center'>
+<img src = 'docs/imgs/icnet_tensorboard.jpg' width='180x'>
+</p>
 
-This project has implemented the ICNet training process, allowing you to train your own model directly from *ResNet50* weights as is done in the original work. Other implementations available simple convert the Caffe model to Tensorflow, only allowing for fine-tuning from from weights trained on Cityscapes.
+<center>
+*ICNet model in Tensorboard.*
+</center>
+
+### Training ICNet from ImageNet Weights
+
+This project has implemented the ICNet training process, allowing you to train your own model directly from *ResNet50* weights as is done in the original work. Other implementations available simply convert the Caffe model to Tensorflow, only allowing for fine-tuning from weights trained on Cityscapes.
 
 By training ICNet on weights initialized from ImageNet, you have more flexibility in the transfer learning process. Read more about setting up this process can be found <a href='docs/configs.md'>here</a>.
 
-### Network Compression
+### ICNet Network Compression
 
 In order to achieve real-time speeds, ICNet uses a form of network compression called filter pruning. This drastically reduces the complexity of the model by removing filters from convolutional layers in the network. This project has also implemented this ICNet compression process directly in Tensorflow.
 
 The compression is working, however which "compression scheme" to use is still somewhat ambiguous when reading the original ICNet paper. This is still a work in progress. Read more about compression <a href='docs/compression.md'>here</a>.
 
-<p align = 'center'>
-<img src = 'docs/imgs/icnet_tensorboard.jpg' width='180x'>
-</p>
-<p align = 'center'>ICNet model in Tensorboard.</p>
+### PSPNet Baseline Implementation
+
+In order to also reproduce the baselines used in the original ICNet paper, you will also find implementations and pre-trained models for PSPNet50. Since ICNet can be thought of as a modified PSPNet, it can be useful for comparison purposes.
+
+Informtion on training or using the baseline PSPNet50 model can be found <a href='docs/pspnet.md'>here</a>.
 
 ## Documentation
 
@@ -108,7 +117,7 @@ This project and it's documentation was highly based on the *Tensorflow Object D
 * [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection)
 * [Saving memory using gradient-checkpointing](https://github.com/openai/gradient-checkpointing)
 * [Tensorflow Slim](https://github.com/tensorflow/models/tree/master/research/slim)
-* [ICNet project which uses Caffe2Tensorflow](https://github.com/hellochick/ICNet-tensorflow)
+* [ICNet converted from Caffe using Caffe-Tensorflow](https://github.com/hellochick/ICNet-tensorflow)
 
 ## Thanks
 

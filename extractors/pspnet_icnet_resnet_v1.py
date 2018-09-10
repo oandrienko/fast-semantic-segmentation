@@ -1,4 +1,4 @@
-"""Resnet V1 ICNet feature extracter interface implementation."""
+"""ResNet V1 feature extracter interface implementation."""
 import tensorflow as tf
 # from nets import resnet_utils
 from tensorflow.contrib.slim.nets import resnet_utils

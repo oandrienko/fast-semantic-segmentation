@@ -135,8 +135,8 @@ def train_segmentation_model(create_model_fn,
             preprocessor_config_list=train_config.preprocessor_step)
 
     with tf.Graph().as_default():
-
-        with tf.device(deploy_config.variables_device()): # CPU of common ps server
+        # CPU of common ps server
+        with tf.device(deploy_config.variables_device()):
             global_step = tf.train.get_or_create_global_step()
 
         with tf.device(deploy_config.inputs_device()): # CPU of each worker
@@ -162,13 +162,13 @@ def train_segmentation_model(create_model_fn,
             first_clone_scope = deploy_config.clone_scope(0)
 
             if sync_bn_accross_gpu:
-                # Attempt to sync BN updates across all GPU's in a tower. Caution
-                # since this is very slow. Might not be needed
+                # Attempt to sync BN updates across all GPU's in a tower.
+                # Caution since this is very slow. Might not be needed
                 update_ops = []
                 for idx in range(num_clones):
                     nth_clone_sope = deploy_config.clone_scope(0)
-                    update_ops.extend(tf.get_collection(tf.GraphKeys.UPDATE_OPS,
-                                              nth_clone_sope))
+                    update_ops.extend(tf.get_collection(
+                        tf.GraphKeys.UPDATE_OPS, nth_clone_sope))
             else:
                 # Gather updates from first GPU only
                 update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS,
@@ -227,7 +227,8 @@ def train_segmentation_model(create_model_fn,
 
         # TODO(@oandrien): we might want to add gradient multiplier here
         # for the last layer if we have trouble with training
-        with tf.device(deploy_config.optimizer_device()): # CPU of common ps server
+        # CPU of common ps server
+        with tf.device(deploy_config.optimizer_device()):
             reg_losses = (None if train_config.add_regularization_loss
                                else [])
             total_loss, grads_and_vars = model_deploy.optimize_clones(
@@ -240,7 +241,7 @@ def train_segmentation_model(create_model_fn,
                 tf.summary.scalar('Losses/TotalLoss', total_loss))
 
             grad_updates = training_optimizer.apply_gradients(grads_and_vars,
-                                                        global_step=global_step)
+                                                    global_step=global_step)
             update_ops.append(grad_updates)
             update_op = tf.group(*update_ops, name='update_barrier')
             with tf.control_dependencies([update_op]):
@@ -265,7 +266,8 @@ def train_segmentation_model(create_model_fn,
               tf.summary.image('VerifyTrainImages/Groundtruths', main_labels))
 
         # Add the summaries from the first clone. These contain the summaries
-        # created by model_fn and either optimize_clones() or _gather_clone_loss().
+        # created by model_fn and either optimize_clones()
+        # or _gather_clone_loss().
         summaries |= set(
             tf.get_collection(tf.GraphKeys.SUMMARIES, first_clone_scope))
 
@@ -291,7 +293,8 @@ def train_segmentation_model(create_model_fn,
 
             if 'should_log' in train_step_kwargs:
                 if sess.run(train_step_kwargs['should_log']):
-                    tf.logging.info('global step %d: loss = %.4f (%.3f sec/step)',
+                    tf.logging.info(
+                        'global step %d: loss = %.4f (%.3f sec/step)',
                         np_global_step, total_loss, time_elapsed)
 
             if log_memory:

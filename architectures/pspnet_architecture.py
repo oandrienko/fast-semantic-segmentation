@@ -30,6 +30,7 @@ class PSPNetArchitecture(model.FastSegmentationModel):
                 num_classes,
                 feature_extractor,
                 classification_loss,
+                filter_scale,
                 use_aux_loss=True,
                 main_loss_weight=1,
                 aux_loss_weight=0,
@@ -41,6 +42,7 @@ class PSPNetArchitecture(model.FastSegmentationModel):
         self._num_classes = num_classes
         self._feature_extractor = feature_extractor
         self._classification_loss = classification_loss
+        self._filter_scale = filter_scale
         self._use_aux_loss = use_aux_loss
         self._main_loss_weight = main_loss_weight
         self._aux_loss_weight = aux_loss_weight
@@ -101,7 +103,7 @@ class PSPNetArchitecture(model.FastSegmentationModel):
             return prediction_dict
 
     def _pspnet_pspmodule(self, input_features):
-        """PSP Adapted module for ICNet..."""
+        """PSP Module """
         with tf.variable_scope('PSPModule'):
             input_n, input_h, input_w, input_c = input_features.get_shape()
             # full scale
@@ -141,7 +143,7 @@ class PSPNetArchitecture(model.FastSegmentationModel):
                                      half_pool, third_pool, forth_pool],
                                      axis=-1)
             output = slim.conv2d(branch_merge,
-                    512, (3, 3),
+                    512//self._filter_scale, (3, 3),
                     stride=1, normalizer_fn=slim.batch_norm)
             return output
 
