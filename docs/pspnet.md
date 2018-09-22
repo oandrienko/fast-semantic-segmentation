@@ -7,11 +7,11 @@ This project allows you to train PSPNet50 from scratch and use it for inference 
 ## Motivation
 
 ### Baseline model for comparison
-As in the original ICNet paper, we use PSPNet50 as a baseline model for comparisons against our trained ICNet model. In particular, we compare both accuracy, number of parameters FLOPs and inference time. 
+As in the original ICNet paper, we use PSPNet50 as a baseline model for comparisons against our trained ICNet model. In particular, we compare both accuracy, number of parameters FLOPs and inference time.
 
 ### Pre-trained checkpoint for ICNet
 
-As discussed in more detail the <a href='docs/installation.md'>ICNet documentation</a>, PSPNet50 is used to initialize ICNet for training. It has been observed that simply initializing from ResNet50 weights does not allow ICNet to converge to the original accuracy reported by the authors. For this reason, we pre-train PSPNet50 for later use with training ICNet.
+As discussed in more detail the <a href='installation.md'>ICNet documentation</a>, PSPNet50 is used to initialize ICNet for training. It has been observed that simply initializing from ResNet50 weights does not allow ICNet to converge to the original accuracy reported by the authors. For this reason, we pre-train PSPNet50 for later use with training ICNet.
 
 ## Training Considerations
 
@@ -23,11 +23,11 @@ Training PSPNet50 is relatively straight forward but has various requirements in
 More detail is provided below regarding these two factors. **In summary, an effective (per-GPU) batch size of 8 or greater and a crop-size of 768 by 768 or greater was shown to be successful for training PSPNet.**
 
 #### Batch Size and Batch Normalization
-When training using SGD, a batch size hyperparameter must be specified and defines the number of examples that are used before updating your model weights. Each iteration, Batch Normalization layers estimate a mean and variance based on the given batch of examples. With a larger batch size, the per-batch mean and variance should theoretically be closer to the global population mean and variance. With low batch-sizes, the per-batch statistics can be skewed and cause problems during training. Therefore, the authors of PSPNet suggest using a batch size of 16. However, such a large batch size this is not possible when training on a single 12GB GPU due to the size overall size of PSPNet. 
+When training using SGD, a batch size hyperparameter must be specified and defines the number of examples that are used before updating your model weights. Each iteration, Batch Normalization layers estimate a mean and variance based on the given batch of examples. With a larger batch size, the per-batch mean and variance should theoretically be closer to the global population mean and variance. With low batch-sizes, the per-batch statistics can be skewed and cause problems during training. Therefore, the authors of PSPNet suggest using a batch size of 16. However, such a large batch size this is not possible when training on a single 12GB GPU due to the size overall size of PSPNet.
 
 Specifically in Tensorflow, this problem is also not solved even with multi-GPU distributed training. For example, consider splitting a total batch size of 16 across 2 GPUs. This will result in an effective per-GPU batch size of 8. Although the total batch size is 16, Batch Norm statistics for each copy of the model (assuming a data parallelism configuration) are still only calculated based on the effective batch size. The original PSPNet authors get around this issue by using a "Distributed Batch Normalization" Layer specific to Caffe and not currently available in Tensorflow. An [open issue](https://github.com/tensorflow/tensorflow/issues/7439) in the Tensorflow repository exists but it has still not been addressed by the Tensorflow authors.
 
-A solution to this issue is to somehow lower the amount of memory required to train with a decent batch size. This project used [https://github.com/openai/gradient-checkpointing](Gradient Checkpointing) project from OpenAI to solve this issue. In particular, Gradient Checkpointing allows one to fit larger models on to a single GPU by sacrificing in total training time. In this project, the `train.py` script uses regular gradient decent updates and `train_mem_saving.py` script uses gradient checkpointing. Using a 12GB Titan Xp, a **max batch size of 8** has been found to be sufficient for training PSPNet.
+A solution to this issue is to somehow lower the amount of memory required to train with a decent batch size. This project used [Gradient Checkpointing project](https://github.com/openai/gradient-checkpointing ) from OpenAI to solve this issue. In particular, Gradient Checkpointing allows one to fit larger models on to a single GPU by sacrificing in total training time. In this project, the `train.py` script uses regular gradient decent updates and `train_mem_saving.py` script uses gradient checkpointing. Using a 12GB Titan Xp, a **max batch size of 8** has been found to be sufficient for training PSPNet.
 
 #### Image Cropping For Training
 Another important consideration during training is the image crop size. This image crop defines the resolution of images passed into the network for training. Cropping is done as a preprocessing step which is defined in the training configuration files.
@@ -38,7 +38,7 @@ The authors of PSPNet state that larger cropsizes are critical for success in tr
 
 The following instructions will provide a step-by-step guide for training PSPNet50. It is assumed you have access to one or two NVIDIA Titan Xp GPUs or other equivalent graphics cards. Having two GPUs will allow you to run one evaluation process and another training process.
 
-To start, make sure you have setup your training and validation set <a href='docs/datasets.md'> TFRecords created</a> . Then download the TF-Slim ResNet50 checkpoint for initializing PSPNet for training
+To start, make sure you have setup your training and validation set <a href='datasets.md'> TFRecords created</a> . Then download the TF-Slim ResNet50 checkpoint for initializing PSPNet for training
 
 ```
 # from the project root

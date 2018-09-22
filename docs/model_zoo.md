@@ -26,7 +26,7 @@ The table below contains a download link as well as information about the model.
 pass of the network. In the case of Cityscapes, that means the 1024x2048 resolution images are evaluated without cropping and without evaluating subdivided patches (sliding evaluation).
 
 | Model  | Val. Set mIoU | Compress. Factor | Parameters | FLOPs |
-| ------------ | :--------------: | :-------------: | :-------------: | :-------------: | :-------------:
+| ------------ | :--------------: | :-------------: | :-------------: | :-------------:
 | [0818_pspnet50_1.0_713_resnet_v1](https://drive.google.com/drive/folders/1KBXtSa_WxjwW9o7YaF6daGs88Zvaff5o) | 73.8% *[1]* | 1.0 | 46.53M | 2942.59B |
 | ICNet: In Progress [[Contact](mailto:oandrien@uwaterloo.ca)] | - | - | - | - |
 
