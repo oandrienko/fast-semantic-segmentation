@@ -25,12 +25,12 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('input_path', None,
                     'Path to an image or a directory of images.')
 
-flags.DEFINE_string('input_shape', None,
+flags.DEFINE_string('input_shape', '1024,2048,3', # default Cityscapes values
                     'The shape to use for inference. This should '
                     'be in the form [height, width, channels]. A batch '
                     'dimension is not supported for this test script.')
 
-flags.DEFINE_string('pad_to_shape', None,
+flags.DEFINE_string('pad_to_shape', '1025,2049', # default Cityscapes values
                      'Pad the input image to the specified shape. Must have '
                      'the shape specified as [height, width].')
 
@@ -97,6 +97,7 @@ def run_inference_graph(model, trained_checkpoint_prefix,
             save_location = os.path.join(output_directory, filename)
 
             predictions = predictions.astype(np.uint8)
+            output_channels = len(label_color_map[0])
             if output_channels == 1:
                predictions = np.squeeze(predictions[0],-1)
             im = Image.fromarray(predictions)
