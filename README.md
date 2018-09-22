@@ -1,6 +1,6 @@
 ## Real-Time Semantic Segmentation in [TensorFlow](https://github.com/tensorflow/tensorflow)
 
-Perform pixel-wise semantic segmentation on high-resolution images in real-time with Image Cascade Network (ICNet), the highly optimized version of the state-of-the-art Pyramid Scene Parsing Network (PSPNet). This project implements ICNet in Tensorflow trained on Cityscapes.
+Perform pixel-wise semantic segmentation on high-resolution images in real-time with Image Cascade Network (ICNet), the highly optimized version of the state-of-the-art Pyramid Scene Parsing Network (PSPNet). **This project implements ICNet and PSPNet50 in Tensorflow trained on Cityscapes.**
 
 <p align = 'center'>
 <img src = 'docs/imgs/cityscapes_seq.gif' width = '720px'>
@@ -17,6 +17,9 @@ This implementation is based off of the original ICNet paper proposed by Hengshu
 Various modifications had to be made to the original architecture in order to reproduce the training process. More can be read about this <a href='docs/models.md'>here</a>.
 
 ### Release information
+
+#### September 22, 2018
+The baseline PSPNet50 pre-trained model files have been released publically in the Model Zoo. The accuracy of the model surpases that referenced in the ICNet paper.
 
 #### August 12, 2018
 Initial release. Project includes scripts for training ICNet, evaluating ICNet and compressing ICNet from ResNet50 weights. Also includes scripts for training PSPNet and evaluating PSPNet as a baseline. Working on achieving the author's reported accuracy. Will update with links to pre-trained cityscapes checkpoints once the accuracy is matched.
@@ -54,7 +57,8 @@ Informtion on training or using the baseline PSPNet50 model can be found <a href
   * <a href='docs/installation.md'>Installation: Getting the project running on your machine</a><br>
   * <a href="docs/datasets.md">Datasets: Setting up a TFRecord file for training and evaluation</a><br>
   * <a href="docs/configs.md">Configs and Fine-tune Training: Setting up your own configuration files for training and evaluation</a><br>
-  * <a href="docs/models.md">Model Zoo: Some information about the models in this project and links to checkpoints</a><br>
+  * <a href="docs/pspnet.md">PSPNet50: Training a PSPNet50 Walkthrough</a><br>
+  * <a href="docs/model_zoo.md">Model Zoo: Some information about the models in this project and links to checkpoints</a><br>
 
 ## Quick Start
 
@@ -91,20 +95,6 @@ python eval.py \
 	--eval_dir path/to/eval/dir \
 	--config_path configs/my_sample_icnet_resnet_v1.config \
 	--image_summaries
-```
-
-### Exporting Models
-
-After you are done training, you will most likely want to export your model for deployment. This is typically done by converting Tensorflow checkpoints to frozen inference graphs. To generate a rozen inference graphs, use `export.py`.
-
-Example usage for exporting an ICNet model:
-
-```
-python export.py \
-	--input_shape 1,1025,2049,3 \
-	--config_path configs/my_sample_icnet_resnet_v1.config \
-	--trained_checkpoint path/to/checkpoints/model.ckpt-123 \
-	--output_dir path/to/output/location
 ```
 
 ## Maintainers
