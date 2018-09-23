@@ -49,7 +49,8 @@ python eval.py \
 	--train_dir 0818_pspnet_1.0_713_resnet_v1 \
 	--eval_dir 0818_pspnet_1.0_713_resnet_v1 \
 	--config_path 0818_pspnet_1.0_713_resnet_v1/pipeline.config \
-	--evaluate_all_from_checkpoint model.ckpt
+	--evaluate_all_from_checkpoint model.ckpt \
+	--verbose
 ```
 
 The resulting accuracy measure in <mIoU> will be almost identical if you were to run the official Cityscapes per-pixel evaluation script.
