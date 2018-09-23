@@ -16,7 +16,7 @@ from abc import abstractmethod
 from functools import partial
 import tensorflow as tf
 
-import base_model as model
+from . import base_model as model
 
 slim = tf.contrib.slim
 
@@ -105,7 +105,7 @@ class PSPNetArchitecture(model.FastSegmentationModel):
     def _pspnet_pspmodule(self, input_features):
         """PSP Module """
         with tf.variable_scope('PSPModule'):
-            input_n, input_h, input_w, input_c = input_features.get_shape()
+            input_n, input_h, input_w, input_c = input_features.get_shape().as_list()
             # full scale
             full_pool_in = slim.avg_pool2d(input_features,
                     [input_h, input_w], stride=[input_h, input_w])

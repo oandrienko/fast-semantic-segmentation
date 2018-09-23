@@ -10,7 +10,7 @@ from abc import abstractmethod
 from functools import partial
 import tensorflow as tf
 
-import base_model as model
+from . import base_model as model
 
 slim = tf.contrib.slim
 

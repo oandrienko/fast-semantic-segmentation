@@ -20,7 +20,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-import graph_utils
+from . import graph_utils
 from graph_utils import GraphTraversalState
 
 
