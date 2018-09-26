@@ -9,11 +9,21 @@ Their implementation can be found here:
 
 For ICNet, the suggested checkpoint nodes are:
 
-    'SharedFeatureExtractor/resnet_v1_50/block1/unit_3/bottleneck_v1/Relu'
-    'SharedFeatureExtractor/resnet_v1_50/block2/unit_4/bottleneck_v1/Relu'
-    'SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu'
-    'SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu'
-    'FastPSPModule/Conv/Relu6:0'
+    SharedFeatureExtractor/resnet_v1_50/block1/unit_3/bottleneck_v1/Relu
+    SharedFeatureExtractor/resnet_v1_50/block2/unit_4/bottleneck_v1/Relu
+    SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu
+    SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu
+    FastPSPModule/Conv/Relu
+    CascadeFeatureFusion_0/Relu
+    CascadeFeatureFusion_1/Relu
+
+For PSPNet 50, the suggested checkpoint nodes are:
+
+    SharedFeatureExtractor/resnet_v1_50/block1/unit_3/bottleneck_v1/Relu
+    SharedFeatureExtractor/resnet_v1_50/block2/unit_4/bottleneck_v1/Relu
+    SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu
+    SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu
+    PSPModule/Conv/Relu
 
 Tested on Titan Xp.
 """
@@ -46,7 +56,9 @@ ICNET_GRADIENT_CHECKPOINTS = [
     'SharedFeatureExtractor/resnet_v1_50/block2/unit_4/bottleneck_v1/Relu',
     'SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu',
     'SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu',
-    'FastPSPModule/Conv/Relu6'
+    'FastPSPModule/Conv/Relu6',
+    'CascadeFeatureFusion_0/Relu',
+    'CascadeFeatureFusion_1/Relu'
 ]
 
 
