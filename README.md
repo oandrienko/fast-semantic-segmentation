@@ -30,9 +30,9 @@ Initial release. Project includes scripts for training ICNet, evaluating ICNet a
 <img src = 'docs/imgs/icnet_tensorboard.jpg' width='180x'>
 </p>
 
-<center>
-*ICNet model in Tensorboard.*
-</center>
+<p align = 'center'>
+ICNet model in Tensorboard.
+</p>
 
 ### Training ICNet from ImageNet Weights
 
