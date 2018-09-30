@@ -42,7 +42,7 @@ def plot_magnitude_of_weights(plot_name, weights, compression):
     plt.title(plot_name)
     plt.axvline(x=cut_off_x, ymin=0, ymax=cut_off_y,
         color='red', zorder=2)
-    plt.xticks(list(plt.xticks()[0])+[cut_off_mark])
+    plt.xticks(list(plt.xticks()[0])+[cut_off_x])
     plt.show()
 
 
