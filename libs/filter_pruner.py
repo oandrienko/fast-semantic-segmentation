@@ -184,10 +184,10 @@ class FilterPruner(object):
         if idxs is not None:
             prune_idxs = idxs
         # Apply by actually changing shape, or simulate pruning
+        pruned_weights = np.copy(weights)
         if not self.soft_apply:
-            pruned_weights = weights[:,:,:,prune_idxs]
+            pruned_weights = pruned_value[:,:,:,prune_idxs]
         else:
-            pruned_weights = np.copy(weights)
             pruned_weights[:,:,:,~prune_idxs] = 0
         # Create new Conv layer with pruned weights
         self.output_values_map[weights_node_name] = pruned_weights
@@ -208,10 +208,10 @@ class FilterPruner(object):
         for var_name in [scale_node_name, shift_node_name,
                          mean_node_name, variance_node_name]:
             value = self.values_map[var_name]
+            pruned_value = np.copy(value)
             if not self.soft_apply:
-                pruned_value = value[prune_idxs]
+                pruned_value = pruned_value[prune_idxs]
             else:
-                pruned_value = np.copy(value)
                 pruned_value[~prune_idxs] = 0
             self.output_values_map[var_name] = pruned_value
         return next_bn_node_name
@@ -235,10 +235,10 @@ class FilterPruner(object):
             prune_idxs.resize(batch)
             prune_idxs[len(src_prune_idxs):] = True # keep extra channels
         # Soft apply if we need to retrain without changing variable shape
+        updated_kernels = np.copy(weights)
         if not self.soft_apply:
-            updated_kernels = weights[:,:,prune_idxs,:]
+            updated_kernels = updated_kernels[:,:,prune_idxs,:]
         else:
-            updated_kernels = np.copy(weights)
             updated_kernels[:,:,~prune_idxs,:] = 0
         self.output_values_map[weights_node_name] = updated_kernels
         return weights_node_name

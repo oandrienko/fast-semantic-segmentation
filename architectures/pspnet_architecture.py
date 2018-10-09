@@ -209,7 +209,6 @@ class PSPNetArchitecture(model.FastSegmentationModel):
         exclude_list = ['global_step']
         variables_to_restore = slim.get_variables_to_restore(
                                         exclude=exclude_list)
-        variables_to_restore.append(slim.get_or_create_global_step())
         return variables_to_restore
 
 
