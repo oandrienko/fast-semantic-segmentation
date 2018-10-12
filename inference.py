@@ -59,9 +59,11 @@ def _get_images_from_path(input_path):
         for dirpath,_,filenames in os.walk(input_path):
             for f in filenames:
                 file_path = os.path.abspath(os.path.join(dirpath, f))
-                if not _valid_file_ext(file_path):
-                    raise ValueError('File must be JPG or PNG.')
-                image_file_paths.append(file_path)
+                if _valid_file_ext(file_path):
+                    image_file_paths.append(file_path)
+        if len(image_file_paths) == 0:
+            raise ValueError('No images in directory. '
+                             'Files must be JPG or PNG')
     else:
         if not _valid_file_ext(input_path):
             raise ValueError('File must be JPG or PNG.')
@@ -97,10 +99,9 @@ def run_inference_graph(model, trained_checkpoint_prefix,
             save_location = os.path.join(output_directory, filename)
 
             predictions = predictions.astype(np.uint8)
-            output_channels = len(label_color_map[0])
-            if output_channels == 1:
-               predictions = np.squeeze(predictions[0],-1)
-            im = Image.fromarray(predictions)
+            if len(label_color_map[0]) == 1:
+               predictions = np.squeeze(predictions,-1)
+            im = Image.fromarray(predictions[0])
             im.save(save_location, "PNG")
 
 
