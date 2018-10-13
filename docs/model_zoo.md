@@ -7,9 +7,7 @@ Each downloadable archive will contain the following:
 * a graph proto (`graph.pbtxt`)
 * a checkpoint
   (`model.ckpt.data-00000-of-00001`, `model.ckpt.index`, `model.ckpt.meta`)
-* a frozen graph proto with weights baked into the graph as constants
-  (`frozen_inference_graph.pb`) to be used for out of the box inference
-    (try this out in the Jupyter notebook!)
+* a frozen graph proto (`frozen_inference_graph.pb`) with folded batch norm parameters and weights included in the graph as constants. To be used for out of the box inference
 * a config file (`pipeline.config`) which was used to generate the graph.
 * a text file with per-layer benchmarking information (`benchmark.txt`)
 
@@ -18,20 +16,22 @@ Each downloadable archive will contain the following:
 
 The table below contains a download link as well as information about the model.The listed information is:
 
-* the mean Intersection over Union (mIoU) on the Cityscapes validation set ‡
-* the compression factor indicating the percentage of filters removed during pruning
-* the number of parameters in the model
+* mean Intersection over Union (mIoU) on the Cityscapes validation set ‡
+* compression factor indicating the percentage of filters removed during pruning
+* number of parameters in the model
+* estimate of floating point operations per second
 
 **‡** **The mIoU here is based on whole-image inference**. This means that evaluation is done with one forward
 pass of the network. In the case of Cityscapes, that means the 1024x2048 resolution images are evaluated without cropping and without evaluating subdivided patches (sliding evaluation).
 
 | Model  | Val. Set mIoU | Compress. Factor | Parameters | FLOPs |
 | ------------ | :--------------: | :-------------: | :-------------: | :-------------:
-| [0818_pspnet50_1.0_713_resnet_v1](https://drive.google.com/drive/folders/1KBXtSa_WxjwW9o7YaF6daGs88Zvaff5o) | 73.8% *[1]* | 1.0 | 46.53M | 2942.59B |
-| ICNet: In Progress [[Contact](mailto:oandrien@uwaterloo.ca)] | - | - | - | - |
+| [0818_pspnet50_1.0_713_resnet_v1](https://drive.google.com/file/d/1ARJOa2QrbSVzQKrSCKaiRVrXUZ52-HXI/view?usp=sharing) | 73.8% *[1]* | 1.0 | 46.53M | 2942.59B |
+| [0818_icnet_0.5_1025_resnet_v1](https://drive.google.com/file/d/1AjeshDkEAAGsgbX9bwLkN6aL9bkd2pgh/view?usp=sharing) | 65.9% | 0.5 | 6.71M | 63.20B |
 
-**[1]** *The original mIoU numbers reported in the PSPNet paper are calculated using
-sliding evaluation - not whole-image evaluation.
+**[1]** The original mIoU numbers reported in the PSPNet paper are calculated using sliding evaluation - not whole-image evaluation.
+
+___
 
 ### Validating Pre-trained Models
 

@@ -25,14 +25,8 @@ For PSPNet 50, the suggested checkpoint nodes are:
     SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu
     PSPModule/Conv/Relu
 
-Tested on Titan Xp.
+Tested on NVIDIA 1080 Ti.
 """
-
-
-# TODO: Do not keep this in master - move to seperate branch
-#   called gradient-checkpointing
-
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

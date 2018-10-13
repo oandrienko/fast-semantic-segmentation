@@ -1,12 +1,10 @@
-# Prune config for pruning all Conv Layers in ICNet with ResNet50 V1 Backbone.
-#
+# Config used to prune filters from ICNet with ResNet50 V1 Backbone
 #
 # Filter pruning for residual blocks:
-#
-# The config applies the principal that the feature maps to be pruned at
-# residual blocks should be determined by the pruning results of
-# the shortcut layer. See the paper https://arxiv.org/abs/1608.08710
-# for more information.
+#   The config applies the principal that the feature maps to be pruned at
+#   residual blocks should be determined by the pruning results of
+#   the shortcut layer. See the paper https://arxiv.org/abs/1608.08710
+#   for more information.
 
 compression_strategy {
     filter_pruner {
@@ -32,6 +30,10 @@ compression_strategy {
             following {
                 name: "block1/unit_2/bottleneck_v1/conv1/Conv2D"
             }
+            # Block_1 - Unit_3 (Shortcut is Maxpool, so we skip)
+            following {
+                name: "block1/unit_3/bottleneck_v1/conv1/Conv2D"
+            }
         }
         node {
             # PARALLEL CONV
@@ -48,15 +50,16 @@ compression_strategy {
         }
         # Block_1 - Unit_2
         node {
+            # END OF SKIP
             target {
                 name: "block1/unit_2/bottleneck_v1/conv3/Conv2D"
             }
+            # MAIN_SHORTCUT_1
+            source {
+                name: "block1/unit_1/bottleneck_v1/shortcut/Conv2D"
+            }
             following {
                 name: "block1/unit_2/bottleneck_v1/conv3/BatchNorm/FusedBatchNorm"
-            }
-            # Block_1 - Unit_3
-            following {
-                name: "block1/unit_3/bottleneck_v1/conv1/Conv2D"
             }
         }
 
@@ -75,6 +78,21 @@ compression_strategy {
             following {
                 name: "block2/unit_2/bottleneck_v1/conv1/Conv2D"
             }
+            # Block_2 - Unit_3
+            following {
+                name: "block2/unit_3/bottleneck_v1/conv1/Conv2D"
+            }
+            # Block_2 - Unit_4
+            following {
+                name: "block2/unit_4/bottleneck_v1/conv1/Conv2D"
+            }
+            # Block_3 - Unit_1
+            following {
+                name: "block3/unit_1/bottleneck_v1/conv1/Conv2D"
+            }
+            following {
+                name: "block3/unit_1/bottleneck_v1/shortcut/Conv2D"
+            }
         }
         node {
             # PARALLEL CONV
@@ -91,28 +109,44 @@ compression_strategy {
         }
         # Block_2 - Unit_2
         node {
+            # END OF SKIP
             target {
                 name: "block2/unit_2/bottleneck_v1/conv3/Conv2D"
+            }
+            # MAIN_SHORTCUT_2
+            source {
+                name: "block2/unit_1/bottleneck_v1/shortcut/Conv2D"
             }
             following {
                 name: "block2/unit_2/bottleneck_v1/conv3/BatchNorm/FusedBatchNorm"
             }
-            # Block_2 - Unit_3
-            following {
-                name: "block2/unit_3/bottleneck_v1/conv1/Conv2D"
-            }
         }
         # Block_2 - Unit_3
         node {
+            # END OF SKIP
             target {
                 name: "block2/unit_3/bottleneck_v1/conv3/Conv2D"
+            }
+            # MAIN_SHORTCUT_2
+            source {
+                name: "block2/unit_1/bottleneck_v1/shortcut/Conv2D"
             }
             following {
                 name: "block2/unit_3/bottleneck_v1/conv3/BatchNorm/FusedBatchNorm"
             }
-            # Block_2 - Unit_4
+        }
+        # Block_2 - Unit_4
+        node {
+            # END OF SKIP
+            target {
+                name: "block2/unit_4/bottleneck_v1/conv3/Conv2D"
+            }
+            # MAIN_SHORTCUT_2
+            source {
+                name: "block2/unit_1/bottleneck_v1/shortcut/Conv2D"
+            }
             following {
-                name: "block2/unit_4/bottleneck_v1/conv1/Conv2D"
+                name: "block2/unit_4/bottleneck_v1/conv3/BatchNorm/FusedBatchNorm"
             }
         }
 
@@ -131,6 +165,29 @@ compression_strategy {
             following {
                 name: "block3/unit_2/bottleneck_v1/conv1/Conv2D"
             }
+            # Block_3 - Unit_3
+            following {
+                name: "block3/unit_3/bottleneck_v1/conv1/Conv2D"
+            }
+            # Block_3 - Unit_4
+            following {
+                name: "block3/unit_4/bottleneck_v1/conv1/Conv2D"
+            }
+            # Block_3 - Unit_5
+            following {
+                name: "block3/unit_5/bottleneck_v1/conv1/Conv2D"
+            }
+            # Block_3 - Unit_6
+            following {
+                name: "block3/unit_6/bottleneck_v1/conv1/Conv2D"
+            }
+            # Block_4 - Unit_1
+            following {
+                name: "block4/unit_1/bottleneck_v1/conv1/Conv2D"
+            }
+            following {
+                name: "block4/unit_1/bottleneck_v1/shortcut/Conv2D"
+            }
         }
         node {
             # PARALLEL CONV
@@ -147,54 +204,72 @@ compression_strategy {
         }
         # Block_3 - Unit_2
         node {
+            # END OF SKIP
             target {
                 name: "block3/unit_2/bottleneck_v1/conv3/Conv2D"
+            }
+            # MAIN_SHORTCUT_3
+            source {
+                name: "block3/unit_1/bottleneck_v1/shortcut/Conv2D"
             }
             following {
                 name: "block3/unit_2/bottleneck_v1/conv3/BatchNorm/FusedBatchNorm"
             }
-            # Block_3 - Unit_3
-            following {
-                name: "block3/unit_3/bottleneck_v1/conv1/Conv2D"
-            }
         }
         # Block_3 - Unit_3
         node {
+            # END OF SKIP
             target {
                 name: "block3/unit_3/bottleneck_v1/conv3/Conv2D"
+            }
+            # MAIN_SHORTCUT_3
+            source {
+                name: "block3/unit_1/bottleneck_v1/shortcut/Conv2D"
             }
             following {
                 name: "block3/unit_3/bottleneck_v1/conv3/BatchNorm/FusedBatchNorm"
             }
-            # Block_3 - Unit_4
-            following {
-                name: "block3/unit_4/bottleneck_v1/conv1/Conv2D"
-            }
         }
         # Block_3 - Unit_4
         node {
+            # END OF SKIP
             target {
                 name: "block3/unit_4/bottleneck_v1/conv3/Conv2D"
+            }
+            # MAIN_SHORTCUT_3
+            source {
+                name: "block3/unit_1/bottleneck_v1/shortcut/Conv2D"
             }
             following {
                 name: "block3/unit_4/bottleneck_v1/conv3/BatchNorm/FusedBatchNorm"
             }
-            # Block_3 - Unit_5
-            following {
-                name: "block3/unit_5/bottleneck_v1/conv1/Conv2D"
-            }
         }
         # Block_3 - Unit_5
         node {
+            # END OF SKIP
             target {
                 name: "block3/unit_5/bottleneck_v1/conv3/Conv2D"
+            }
+            # MAIN_SHORTCUT_3
+            source {
+                name: "block3/unit_1/bottleneck_v1/shortcut/Conv2D"
             }
             following {
                 name: "block3/unit_5/bottleneck_v1/conv3/BatchNorm/FusedBatchNorm"
             }
-            # Block_3 - Unit_6
+        }
+        # Block_3 - Unit_6
+        node {
+            # END OF SKIP
+            target {
+                name: "block3/unit_6/bottleneck_v1/conv3/Conv2D"
+            }
+            # MAIN_SHORTCUT_3
+            source {
+                name: "block3/unit_1/bottleneck_v1/shortcut/Conv2D"
+            }
             following {
-                name: "block3/unit_6/bottleneck_v1/conv1/Conv2D"
+                name: "block3/unit_6/bottleneck_v1/conv3/BatchNorm/FusedBatchNorm"
             }
         }
 
@@ -213,6 +288,13 @@ compression_strategy {
             following {
                 name: "block4/unit_2/bottleneck_v1/conv1/Conv2D"
             }
+            # Block_3 - Unit_3
+            following {
+                name: "block4/unit_3/bottleneck_v1/conv1/Conv2D"
+            }
+            following {
+                name: "...FastPSPModule/Conv/Conv2D"
+            }
         }
         node {
             # PARALLEL CONV
@@ -229,28 +311,30 @@ compression_strategy {
         }
         # Block_4 - Unit_2
         node {
+            # END OF SKIP
             target {
                 name: "block4/unit_2/bottleneck_v1/conv3/Conv2D"
+            }
+            # MAIN_SHORTCUT_4
+            source {
+                name: "block4/unit_1/bottleneck_v1/shortcut/Conv2D"
             }
             following {
                 name: "block4/unit_2/bottleneck_v1/conv3/BatchNorm/FusedBatchNorm"
             }
-            # Block_4 - Unit_3
-            following {
-                name: "block4/unit_3/bottleneck_v1/conv1/Conv2D"
-            }
         }
         # Block_4 - Unit_3
         node {
+            # END OF SKIP
             target {
                 name: "block4/unit_3/bottleneck_v1/conv3/Conv2D"
             }
+            # MAIN_SHORTCUT_4
+            source {
+                name: "block4/unit_1/bottleneck_v1/shortcut/Conv2D"
+            }
             following {
                 name: "block4/unit_3/bottleneck_v1/conv3/BatchNorm/FusedBatchNorm"
-            }
-            # Block_4 - Unit_4
-            following {
-                name: "...FastPSPModule/Conv/Conv2D"
             }
         }
 

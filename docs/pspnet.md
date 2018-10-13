@@ -34,16 +34,17 @@ Another important consideration during training is the image crop size. This ima
 
 The authors of PSPNet state that larger cropsizes are critical for success in training PSPNet. Given the GPU limitation mentioned, a **crop size of 768x768** is used for training the PSPNet50 implementation in this project.
 
-## Training PSPNet50 with Tensorflow From ResNet Weights
+## Training PSPNet From ResNet50 Weights Walkthrough
 
-The following instructions will provide a step-by-step guide for training PSPNet50. It is assumed you have access to one or two NVIDIA Titan Xp GPUs or other equivalent graphics cards. Having two GPUs will allow you to run one evaluation process and another training process.
+The following instructions will provide a step-by-step guide for training PSPNet50 the Cityscapes dataset. It is assumed you have access to one or two NVIDIA Titan Xp GPUs or other equivalent graphics cards. Having two GPUs will allow you to run one evaluation process and another training process.
 
 To start, make sure you have setup your training and validation set <a href='datasets.md'> TFRecords created</a> . Then download the TF-Slim ResNet50 checkpoint for initializing PSPNet for training
 
 ```
 # from the project root
 wget http://download.tensorflow.org/models/resnet_v1_50_2016_08_28.tar.gz
-mkdir -p resnet_v1_50_2016_08_28 && tar -zxvf resnet_v1_50_2016_08_28.tar.gz
+mkdir -p resnet_v1_50_2016_08_28
+tar -zxvf resnet_v1_50_2016_08_28.tar.gz -C  resnet_v1_50_2016_08_28
 ```
 
 Next, we setup the configuration file. Copy and modify the supplied configuration file located at:
@@ -94,7 +95,7 @@ export CHECKPOINT_NODES=SharedFeatureExtractor/resnet_v1_50/block1/unit_3/bottle
 python train_mem_saving.py \
 	--config_path configs/pspnet_1.0_713_resnet_v1_CUSTOM.config \
 	--logdir /tmp/pspnet_1.0_713_resnet_v1_TRAIN \
-	--checkpoint_nodes $CHECKPOINT_NODES
+	--checkpoint_nodes $CHECKPOINT_NODES \
 	--test_image_summaries \
 	--log_memory
 ```
