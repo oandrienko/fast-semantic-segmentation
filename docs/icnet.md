@@ -9,19 +9,19 @@ Due to the various architectural optimizations, ICNet is one of the few proposed
 ## Implementation Details
 It is important to note that the ICNet model implemented in this project does not exactly match the inference model that was released by the original ICNet author. The primary difference is that the original ICNet uses a unreleased and proprietary version of ResNet50. When investigating their prototxt, you will notice that the input to their ResNet model has 2 additional Conv layers before the first Average Pool. These layers are not found in the original ResNet50 released by Kaiming He.
 
-To get past this hurdle, an open source implementation of ResNet found in TF Slim was used. Additionally, the ICNet implementation in this project has the second branch stem out from a different layer than the original model. However, these modifications are minor and should not change the preforamance.
+To get past this hurdle, an open source implementation of ResNet found in TF Slim was used. Additionally, the ICNet implementation in this project has the second branch stem out from a different layer than the original model. However, these modifications are minor and should not change the performance.
 
 ## Training ICNet with Tensorflow
 
 ### Single-Stage Training Procedure
-If you wish to avoid going through the trouble of training multiple times, you can train ICNet directly from classifications weights. This will be similar to what is done in the PSPNet walkthrough <a href="pspnet.md">here</a>. The same general procedure can be followed with ICNet. Note that this will produce worse results than the two-stage procecedure.
+If you wish to avoid going through the trouble of training multiple times, you can train ICNet directly from classifications weights. This will be similar to what is done in the PSPNet walkthrough <a href="pspnet.md">here</a>. The same general procedure can be followed with ICNet. Note that this will produce worse results than the two-stage procedure.
 
 ### Two-Stage Training Procedure
 In order to replicate the training procedure in the original ICNet paper, multiple steps must be taken. In particular, transfer learning must be done from the baseline PSPNet50 model. Compression must also then be used. 
 
 1. **Stage 0 ~ Pre-train a PSPNet50 model:** First, a PSPNet50 model is trained on weights initialized from a dilated ResNet50 model. Using a similar training procedure as described in the original paper (with a crop size of 768, 120K training iterations and an initial learning rate of 0.01), the PSPNet50 model in this project was trained and converged at approximately *74% mIoU*.
-2. **Stage 1 ~ Initalize ICNet Branch from PSPNet50:** With a base PSPNet50 model trained, the second stage of training can begin by initializing the ICNet quarter resolution branch with the pre-trained PSPNet50 model (with a crop size of 1024, 200K training iterations and an initial learning rate of 0.001). Initalizing ICNet from these weights allowed for convergence at accuracies similar to the original ICNet paper.
-3. **Stage 2 ~ Compression and Retraining:** Once the base ICNet model is trained, we must prune half of the kernels to achieve the performance of the original paper. This is a process where kernels are removed from each convolutional layer iterativley. After the kernels are pruned, the prunned model must be retrained a final time to recover from the lost accuracy during prunning.
+2. **Stage 1 ~ Initialize ICNet Branch from PSPNet50:** With a base PSPNet50 model trained, the second stage of training can begin by initializing the ICNet quarter resolution branch with the pre-trained PSPNet50 model (with a crop size of 1024, 200K training iterations and an initial learning rate of 0.001). Initializing ICNet from these weights allowed for convergence at accuracies similar to the original ICNet paper.
+3. **Stage 2 ~ Compression and Retraining:** Once the base ICNet model is trained, we must prune half of the kernels to achieve the performance of the original paper. This is a process where kernels are removed from each convolutional layer iteratively. After the kernels are pruned, the pruned model must be retrained a final time to recover from the lost accuracy during pruning.
 
 ## Training ICNet with Two Stages Walkthrough
 
@@ -85,7 +85,7 @@ python eval.py \
     --verbose # will log mIoU accuracy
 ```
 
-Once training has finished, use Tensorboard to find the checkpoint with the highestest resulting mIoU. We will use this for training the second stage. To open Tensorboard run
+Once training has finished, use Tensorboard to find the checkpoint with the highest resulting mIoU. We will use this for training the second stage. To open Tensorboard run
 
 ```
 tensorboard --logdir /tmp/icnet_1.0_953_resnet_v1_stage_1_EVAL
@@ -108,4 +108,4 @@ Now that we have a compressed model, we need to retrain. As with the first stage
 
 `configs/two_stage_icnet_1.0_953_resnet_v1_stage_2.config`
 
-It will contain the required hyperparameters for training. You should modify same feilds with before, making sure to point to the compressed model for initalization. Notice that in this config, the `filter_scale` field is set to 0.5 instead of 1.0. Then run training and evaluation as before which will produce your final model.
+It will contain the required hyperparameters for training. You should modify same fields with before, making sure to point to the compressed model for initialization. Notice that in this config, the `filter_scale` field is set to 0.5 instead of 1.0. Then run training and evaluation as before which will produce your final model.

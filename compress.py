@@ -73,7 +73,7 @@ def main(unused_args):
         print('The `input_graph` specified does not exist.')
         return -1
 
-    output_path_name = "prunned_model.ckpt"
+    output_path_name = "pruned_model.ckpt"
     compression_config = compressor_pb2.CommpressionConfig()
     with tf.gfile.GFile(FLAGS.config_path, "r") as f:
         proto_str = f.read()

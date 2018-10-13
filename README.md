@@ -11,25 +11,28 @@ Deploy ICNet and preform inference at over 30fps on NVIDIA Titan Xp.
 </p>
 
 This implementation is based off of the original ICNet paper proposed by Hengshuang Zhao titled [ICNet for Real-Time Semantic Segmentation on High-Resolution Images](https://arxiv.org/abs/1704.08545). Some ideas were also taken from their previous PSPNet paper, [Pyramid Scene Parsing Network](https://arxiv.org/abs/1612.01105
-). The Network Compression implemented is based on the paper [Pruning Filters for Efficient ConvNets](https://arxiv.org/abs/1608.08710
+). The network compression implemented is based on the paper [Pruning Filters for Efficient ConvNets](https://arxiv.org/abs/1608.08710
 ).
 
 ### Release information
+
+#### October 14, 2018
+An ICNet model trained in August, 2018 has been released as a pre-trained model in the Model Zoo. New training setups are being experimented with to increase the accuracy of this model which should be released in the near future.
 
 #### September 22, 2018
 The baseline PSPNet50 pre-trained model files have been released publically in the Model Zoo. The accuracy of the model surpases that referenced in the ICNet paper.
 
 #### August 12, 2018
-Initial release. Project includes scripts for training ICNet, evaluating ICNet and compressing ICNet from ResNet50 weights. Also includes scripts for training PSPNet and evaluating PSPNet as a baseline. Working on achieving the author's reported accuracy. Will update with links to pre-trained cityscapes checkpoints once the accuracy is matched.
+Initial release. Project includes scripts for training ICNet, evaluating ICNet and compressing ICNet from ResNet50 weights. Also includes scripts for training PSPNet and evaluating PSPNet as a baseline.
 
 ## Documentation
 
-  * <a href='docs/installation.md'>**Installation**: Getting the project running on your machine</a><br>
-  * <a href="docs/datasets.md">**Dataset Format**: Setting up a TFRecord file for training and evaluation</a><br>
-  * <a href="docs/configs.md">**Configs and Fine-tune Training**: Setting up your own configuration files for training and evaluation</a><br>
+  * <a href='docs/installation.md'>**Installation**: Setting up the project</a><br>
+  * <a href="docs/datasets.md">**Dataset Format**: Creating TFRecord files for training and evaluation</a><br>
+  * <a href="docs/configs.md">**Configs and Finetune Training**: Creating your own configuration files for training and evaluation</a><br>
   * <a href="docs/pspnet.md">**PSPNet50**: Walkthrough for Training PSPNet50 baseline</a><br>
-  * <a href="docs/icnet.md">**ICNet**: Walkthrough for Training ICNet</a><br>
-  * <a href="docs/model_zoo.md">**Model Zoo**: Some information about the models in this project and links to checkpoints</a><br>
+  * <a href="docs/icnet.md">**ICNet**: Walkthrough for Training ICNet with compression</a><br>
+  * <a href="docs/model_zoo.md">**Model Zoo**: Links to pre-trained checkpoints</a><br>
 
 ## Overview
 
@@ -43,7 +46,7 @@ ICNet model in Tensorboard.
 
 ### Training ICNet from Classification Weights
 
-This project has implemented the ICNet training process, allowing you to train your own model directly from *ResNet50* weights as is done in the original work. Other implementations available simply convert the Caffe model to Tensorflow, only allowing for fine-tuning from weights trained on Cityscapes.
+This project has implemented the ICNet training process, allowing you to train your own model directly from *ResNet50* weights as is done in the original work. Other available implementations simply convert the Caffe model to Tensorflow, only allowing for fine-tuning from weights trained on Cityscapes.
 
 By training ICNet on weights initialized from ImageNet, you have more flexibility in the transfer learning process. Read more about setting up this process can be found <a href='docs/configs.md'>here</a>. For training ICNet, follow the guide <a href='docs/icnet.md'>here</a>.
 
@@ -64,7 +67,7 @@ Informtion on training or using the baseline PSPNet50 model can be found <a href
 
 ## Related Work
 
-This project and it's documentation was highly based on the *Tensorflow Object Detection API*. It was the initial inspiration for this project. The `third_party` directory of this project contains files from *OpenAI's Gradient Checkpointing* project by Tim Salimans and Yaroslav Bulatov. The helper modules found in `third_party/model_deploy.py` are from the Tensorflow Slim project. Finally, I used another open source ICNet implementation which converts the original ICNet weights as a reference implementation. Find all these projects below:
+This project and some of the documentation was based on the *Tensorflow Object Detection API*. It was the initial inspiration for this project. The `third_party` directory of this project contains files from *OpenAI's Gradient Checkpointing* project by Tim Salimans and Yaroslav Bulatov. The helper modules found in `third_party/model_deploy.py` are from the Tensorflow Slim project. Finally, I used another open source ICNet implementation which converts the original ICNet weights as a reference implementation. Find all these projects below:
 
 * [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection)
 * [Saving memory using gradient-checkpointing](https://github.com/openai/gradient-checkpointing)
