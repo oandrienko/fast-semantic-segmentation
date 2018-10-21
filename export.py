@@ -12,6 +12,7 @@ from tensorflow.python.tools.freeze_graph import freeze_graph_with_def_protos
 
 from protos import pipeline_pb2
 from builders import model_builder
+from libs.constants import CITYSCAPES_LABEL_COLORS
 from libs.exporter import deploy_segmentation_inference_graph
 
 
@@ -39,6 +40,9 @@ flags.DEFINE_string('trained_checkpoint', None,
                     'path/to/model.ckpt')
 
 flags.DEFINE_string('output_dir', None, 'Path to write outputs.')
+
+flags.DEFINE_boolean('output_colours', False,
+                     'Whether the output should be RGB image.')
 
 
 def write_graph_and_checkpoint(inference_graph_def,
@@ -80,6 +84,7 @@ def export_inference_graph(pipeline_config,
                            output_directory,
                            input_shape=None,
                            pad_to_shape=None,
+                           output_colours=False,
                            output_collection_name='predictions'):
 
     _, segmentation_model = model_builder.build(
@@ -97,6 +102,8 @@ def export_inference_graph(pipeline_config,
         model=segmentation_model,
         input_shape=input_shape,
         pad_to_shape=pad_to_shape,
+        label_color_map=(CITYSCAPES_LABEL_COLORS
+            if output_colours else None),
         output_collection_name=output_collection_name)
 
     profile_inference_graph(tf.get_default_graph())
@@ -150,7 +157,7 @@ def main(_):
     export_inference_graph(pipeline_config,
                            FLAGS.trained_checkpoint,
                            FLAGS.output_dir, input_shape,
-                           pad_to_shape)
+                           pad_to_shape,FLAGS.output_colours)
 
 
 if __name__ == '__main__':

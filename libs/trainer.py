@@ -165,8 +165,8 @@ def train_segmentation_model(create_model_fn,
                 # Attempt to sync BN updates across all GPU's in a tower.
                 # Caution since this is very slow. Might not be needed
                 update_ops = []
-                for idx in range(num_clones):
-                    nth_clone_sope = deploy_config.clone_scope(0)
+                for clone_idx in range(num_clones):
+                    nth_clone_sope = deploy_config.clone_scope(clone_idx)
                     update_ops.extend(tf.get_collection(
                         tf.GraphKeys.UPDATE_OPS, nth_clone_sope))
             else:

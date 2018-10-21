@@ -28,8 +28,7 @@ def _map_to_colored_labels(segmentation_map, shape_list, color_map):
         (shape_list[0], shape_list[1], shape_list[2], output_channels))
     return colored_label
 
-def _get_outputs_from_inputs(model, input_tensors,
-                             output_collection_name):
+def _get_outputs_from_inputs(model, input_tensors):
     # models expect a batch dimension
     if len(input_tensors.get_shape()) < 4:
         input_tensors = tf.expand_dims(input_tensors, axis=0)
@@ -40,10 +39,7 @@ def _get_outputs_from_inputs(model, input_tensors,
     output_tensors = outputs_dict[model.main_class_predictions_key]
     prediction_tensor = tf.argmax(output_tensors, 3)
     prediction_tensor = tf.expand_dims(prediction_tensor, -1)
-    # name tensor to make inference with frozen weights easier
-    final_op = tf.identity(prediction_tensor,
-        name=output_collection_name)
-    return final_op
+    return prediction_tensor
 
 
 def _image_tensor_input_placeholder(input_shape=None, pad_to_shape=None):
@@ -65,8 +61,7 @@ def deploy_segmentation_inference_graph(model, input_shape,
                                         output_collection_name="predictions"):
     (placeholder_tensor,
       input_tensor) = _image_tensor_input_placeholder(input_shape, pad_to_shape)
-    outputs = _get_outputs_from_inputs(model, input_tensor,
-            output_collection_name=output_collection_name)
+    outputs = _get_outputs_from_inputs(model, input_tensor)
 
     if label_color_map is not None:
         output_shape = outputs.get_shape().as_list()
@@ -76,5 +71,9 @@ def deploy_segmentation_inference_graph(model, input_shape,
         outputs = tf.image.crop_to_bounding_box(
             outputs, 0, 0, input_shape[0], input_shape[1])
 
+    # name tensor to make inference with frozen weights easier
+    final_op = tf.identity(outputs,
+        name=output_collection_name)
+
     tf.train.get_or_create_global_step()
-    return outputs, placeholder_tensor
+    return final_op, placeholder_tensor

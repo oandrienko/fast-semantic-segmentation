@@ -176,8 +176,12 @@ class ICNetArchitecture(model.FastSegmentationModel):
                     [input_h/6, input_w/6], stride=[input_h/6, input_w/6])
             forth_pool = tf.image.resize_bilinear(forth_pool,
                     size=(input_h, input_w), align_corners=True)
-            branch_merge = tf.add_n([input_features, full_pool,
-                                     half_pool, third_pool, forth_pool])
+            # branch_merge = tf.add_n([input_features, full_pool,
+            #                          half_pool, third_pool, forth_pool])
+            branch_merge = tf.add(input_features, full_pool)
+            branch_merge = tf.add(branch_merge, half_pool)
+            branch_merge = tf.add(branch_merge, third_pool)
+            branch_merge = tf.add(branch_merge, forth_pool)
             output = slim.conv2d(branch_merge,
                     512//self._filter_scale, [1, 1],
                     stride=1, normalizer_fn=slim.batch_norm)
@@ -214,7 +218,8 @@ class ICNetArchitecture(model.FastSegmentationModel):
                     activation_fn=None, scope='Conv')
             dilated_conv = tf.image.resize_bilinear(dilated_conv,
                                                     size=conv.shape[1:3])
-            branch_merge = tf.add_n([conv, dilated_conv])
+            # branch_merge = tf.add_n([conv, dilated_conv])
+            branch_merge = tf.add(conv, dilated_conv)
             output = tf.nn.relu(branch_merge)
             # Output aux predictions if aux loss_enableded
             if self._is_training and self._use_aux_loss:
