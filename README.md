@@ -39,6 +39,10 @@ Initial release. Project includes scripts for training ICNet, evaluating ICNet a
   * <a href="docs/icnet.md">**ICNet**: Walkthrough for Training ICNet with compression</a><br>
   * <a href="docs/model_zoo.md">**Model Zoo**: Links to pre-trained checkpoints</a><br>
 
+#### *Model Depot Inference Tutorials*
+  * <a href="https://modeldepot.io/oandrienko/pspnet50-for-urban-scene-understanding">**PSPNet50 Inference Notebook**</a><br>
+  * <a href="https://modeldepot.io/oandrienko/icnet-for-fast-segmentation">**ICNet Inference Notebook**</a><br>
+
 ## Overview
 
 <p align = 'center'>
