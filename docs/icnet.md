@@ -1,4 +1,4 @@
-# ICNet in Tensorflow
+# Training ICNet with Tensorflow
 
 ## Motivation
 
