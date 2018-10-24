@@ -21,16 +21,13 @@ The table below contains a download link as well as information about the model.
 * number of parameters in the model
 * estimate of floating point operations per second
 
-**‡** **The mIoU here is based on whole-image inference**. This means that evaluation is done with one forward
-pass of the network. In the case of Cityscapes, that means the 1024x2048 resolution images are evaluated without cropping and without evaluating subdivided patches (sliding evaluation).
-
 | Model  | Val. Set mIoU | Compress. Factor | Parameters | FLOPs |
 | ------------ | :--------------: | :-------------: | :-------------: | :-------------:
-| [0818_pspnet50_1.0_713_resnet_v1](https://drive.google.com/file/d/1ARJOa2QrbSVzQKrSCKaiRVrXUZ52-HXI/view?usp=sharing) | 73.8% *[1]* | 1.0 | 46.53M | 2942.59B |
+| [0818_pspnet50_1.0_713_resnet_v1](https://drive.google.com/file/d/1ARJOa2QrbSVzQKrSCKaiRVrXUZ52-HXI/view?usp=sharing) | 73.8% | 1.0 | 46.53M | 2942.59B |
 | [0818_icnet_0.5_1025_resnet_v1](https://drive.google.com/file/d/1AjeshDkEAAGsgbX9bwLkN6aL9bkd2pgh/view?usp=sharing) | 65.9% | 0.5 | 6.71M | 63.20B |
 
-**[1]** The original mIoU numbers reported in the PSPNet paper are calculated using sliding evaluation - not whole-image evaluation.
-
+**‡** **The mIoU here is based on whole-image inference**. This means that evaluation is done with one forward
+pass of the network. In the case of Cityscapes, that means the 1024x2048 resolution images are evaluated without cropping and without evaluating subdivided patches (sliding evaluation).
 ___
 
 ### Validating Pre-trained Models
