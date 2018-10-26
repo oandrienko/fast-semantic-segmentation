@@ -31,6 +31,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
                  first_branch_loss_weight=0.0,
                  second_branch_loss_weight=0.0,
                  add_summaries=True,
+                 no_add_n_op=False,
                  scope=None):
         super(ICNetArchitecture, self).__init__(num_classes=num_classes)
         self._is_training = is_training
@@ -45,6 +46,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
         self._first_branch_loss_weight = first_branch_loss_weight
         self._second_branch_loss_weight = second_branch_loss_weight
         self._add_summaries = add_summaries
+        self._no_add_n_op = no_add_n_op
 
     @property
     def main_class_predictions_key(self):
@@ -178,10 +180,15 @@ class ICNetArchitecture(model.FastSegmentationModel):
                     size=(input_h, input_w), align_corners=True)
             # branch_merge = tf.add_n([input_features, full_pool,
             #                          half_pool, third_pool, forth_pool])
-            branch_merge = tf.add(input_features, full_pool)
-            branch_merge = tf.add(branch_merge, half_pool)
-            branch_merge = tf.add(branch_merge, third_pool)
-            branch_merge = tf.add(branch_merge, forth_pool)
+            if self._no_add_n_op:
+                branch_merge = tf.add(input_features, full_pool)
+                branch_merge = tf.add(branch_merge, half_pool)
+                branch_merge = tf.add(branch_merge, third_pool)
+                branch_merge = tf.add(branch_merge, forth_pool)
+            else:
+                branch_merge = tf.add_n([input_features, full_pool,
+                                     half_pool, third_pool, forth_pool])
+
             output = slim.conv2d(branch_merge,
                     512//self._filter_scale, [1, 1],
                     stride=1, normalizer_fn=slim.batch_norm)

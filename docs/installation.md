@@ -9,6 +9,7 @@ In order to properly run all scripts in this repository, ensure you have all the
 * Numpy
 * Scipy
 * Matplotlib
+* Toposort (for memory saving gradients support)
 
 ## Install libraries using pip
 
@@ -21,7 +22,7 @@ pip install tensorflow
 pip install tensorflow-gpu
 ```
 
-Then for the rest of the dependencies
+Then for the rest of the main dependencies
 
 ```
 pip install --user numpy

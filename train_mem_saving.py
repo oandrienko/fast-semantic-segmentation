@@ -36,7 +36,7 @@ import tensorflow as tf
 
 from google.protobuf import text_format
 
-from third_party.mem_gradients_patch import gradients
+from third_party.memory_saving_gradients_patch import gradients
 
 from builders import model_builder
 from builders import dataset_builder

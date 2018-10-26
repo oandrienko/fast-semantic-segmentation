@@ -71,15 +71,14 @@ def _build_pspnet_icnet_model(model_config, is_training, add_summaries,
 
     if not build_baseline_psp:
         if use_aux_loss:
-            common_kwargs[
-            'main_loss_weight'] = (
+            common_kwargs['main_loss_weight'] = (
                 model_config.main_branch_loss_weight)
-            common_kwargs[
-            'second_branch_loss_weight'] = (
+            common_kwargs['second_branch_loss_weight'] = (
                 model_config.second_branch_loss_weight)
-            common_kwargs[
-            'first_branch_loss_weight'] = (
+            common_kwargs['first_branch_loss_weight'] = (
                 model_config.first_branch_loss_weight)
+        common_kwargs['no_add_n_op'] = (
+            model_config.mobile_ops_only)
         model = (num_classes, icnet_architecture.ICNetArchitecture(
             filter_scale=filter_scale,
             pretrain_single_branch_mode=pretrain_single_branch_mode,

@@ -25,4 +25,7 @@ message ICNet {
     // Used to pretrain a base PSPNet-like base model. This pretrained
     // model should be use to initialize ICNet for training all branches.
     optional bool pretrain_single_branch_mode = 9 [default=false];
+
+    // prevents the use of tf.add_n for merging branches
+    optional bool mobile_ops_only = 10 [default=false];
 }
