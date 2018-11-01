@@ -84,9 +84,12 @@ def create_training_model_losses(input_queue, create_model_fn, train_config,
         tf.logging.info(
             'Adding gradient checkpoints to `checkpoints` collection')
         graph = tf.get_default_graph()
+        clone_scope = graph.get_name_scope()
         checkpoint_list = gradient_checkpoints
         for checkpoint_node_name in checkpoint_list:
             curr_tensor_name = checkpoint_node_name + ":0"
+            if clone_scope is not None:
+                curr_tensor_name = clone_scope + '/' + curr_tensor_name
             node = graph.get_tensor_by_name(curr_tensor_name)
             tf.add_to_collection('checkpoints', node)
 
@@ -135,7 +138,7 @@ def train_segmentation_model(create_model_fn,
             preprocessor_config_list=train_config.preprocessor_step)
 
     with tf.Graph().as_default():
-        # CPU of common ps server
+        # Create the global step on the device storing the variables.
         with tf.device(deploy_config.variables_device()):
             global_step = tf.train.get_or_create_global_step()
 
@@ -148,8 +151,9 @@ def train_segmentation_model(create_model_fn,
                 batch_queue_threads=train_config.num_batch_queue_threads,
                 prefetch_queue_capacity=train_config.prefetch_queue_capacity)
 
-        # Create the global step on the device storing the variables.
+        # CPU of common ps server
         with tf.device(deploy_config.variables_device()):
+            global_step = tf.train.get_or_create_global_step()
             # Note: it is assumed that any loss created by `model_fn`
             # is collected at the tf.GraphKeys.LOSSES collection.
             model_fn = functools.partial(create_training_model_losses,
