@@ -25,7 +25,7 @@ def gradients_speed(ys, xs, grad_ys=None, **kwargs):
 
 def gradients_memory(ys, xs, grad_ys=None, **kwargs):
     return gradients(ys, xs, grad_ys, checkpoints='memory', **kwargs)
-
+        
 def gradients_collection(ys, xs, grad_ys=None, **kwargs):
     return gradients(ys, xs, grad_ys, checkpoints='collection', **kwargs)
 
@@ -62,15 +62,15 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
                                        inclusive=True)
 
     debug_print("bwd_ops: %s", bwd_ops)
-
+    
     # forward ops are all ops that are candidates for recomputation
     fwd_ops = ge.get_forward_walk_ops([x.op for x in xs],
                                       inclusive=True,
                                       within_ops=bwd_ops)
     debug_print("fwd_ops: %s", fwd_ops)
-
+    
     # exclude ops with no inputs
-    fwd_ops = [op for op in fwd_ops if op._inputs]
+    fwd_ops = [op for op in fwd_ops if op.inputs]
 
     # don't recompute xs, remove variables
     xs_ops = _to_ops(xs)
@@ -87,11 +87,11 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
     if type(checkpoints) is not list:
         if checkpoints == 'collection':
             checkpoints = tf.get_collection('checkpoints')
-
+            
         elif checkpoints == 'speed':
             # checkpoint all expensive ops to maximize running speed
             checkpoints = ge.filter_ts_from_regex(fwd_ops, 'conv2d|Conv|MatMul')
-
+            
         elif checkpoints == 'memory':
 
             # remove very small tensors and some weird ops
@@ -106,6 +106,8 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
             ts_all = [t for t in ts_all if 'FusedBatchNorm' not in t.name]
             ts_all = [t for t in ts_all if 'Switch' not in t.name]
             ts_all = [t for t in ts_all if 'dropout' not in t.name]
+            # DV: FP16_FIX - need to add 'Cast' layer here to make it work for FP16
+            ts_all = [t for t in ts_all if 'Cast' not in t.name]
 
             # filter out all tensors that are inputs of the backward graph
             with util.capture_ops() as bwd_ops:
@@ -151,7 +153,7 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
             else:
                 step = int(np.ceil(len(bottleneck_ts) / np.sqrt(N)))
                 checkpoints = sorted_bottlenecks[step::step]
-
+            
         else:
             raise Exception('%s is unsupported input for "checkpoints"' % (checkpoints,))
 
@@ -178,7 +180,7 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
 
     # remove initial and terminal nodes from checkpoints list if present
     checkpoints = list(set(checkpoints) - set(ys) - set(xs))
-
+    
     # check that we have some nodes to checkpoint
     if not checkpoints:
         raise Exception('no checkpoints nodes found or given as input! ')
@@ -200,6 +202,8 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
     debug_print("ops_to_copy = %s", ops_to_copy)
     debug_print("Processing list %s", ys)
     copied_sgv, info = ge.copy_with_input_replacements(ge.sgv(ops_to_copy), {})
+    for origin_op, op in info._transformed_ops.items():
+        op._set_device(origin_op.node_def.device)
     copied_ops = info._transformed_ops.values()
     debug_print("Copied %s to %s", ops_to_copy, copied_ops)
     ge.reroute_ts(checkpoints_disconnected.values(), checkpoints_disconnected.keys(), can_modify=copied_ops)
@@ -244,6 +248,8 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
         if not ops_to_copy: # we're done!
             break
         copied_sgv, info = ge.copy_with_input_replacements(ge.sgv(ops_to_copy), {})
+        for origin_op, op in info._transformed_ops.items():
+            op._set_device(origin_op.node_def.device)
         copied_ops = info._transformed_ops.values()
         debug_print("Copied %s to %s", ops_to_copy, copied_ops)
         ge.reroute_ts(checkpoints_disconnected_other, checkpoints_other, can_modify=copied_ops)
@@ -272,15 +278,24 @@ def gradients(ys, xs, grad_ys=None, checkpoints='collection', **kwargs):
                     d_checkpoints[r] = dr
                 else:
                     d_checkpoints[r] += dr
+        def _unsparsify(x):
+            if not isinstance(x, tf.IndexedSlices):
+                return x
+            assert x.dense_shape is not None, "memory_saving_gradients encountered sparse gradients of unknown shape"
+            indices = x.indices
+            while indices.shape.ndims < x.values.shape.ndims:
+                indices = tf.expand_dims(indices, -1)
+            return tf.scatter_nd(indices, x.values, x.dense_shape)
 
         # partial derivatives to xs (usually the params of the neural net)
         d_xs_new = dv[len(checkpoints_other):]
         for j in range(len(xs)):
             if d_xs_new[j] is not None:
                 if d_xs[j] is None:
-                    d_xs[j] = d_xs_new[j]
+                    d_xs[j] = _unsparsify(d_xs_new[j])
                 else:
-                    d_xs[j] += d_xs_new[j]
+                    d_xs[j] += _unsparsify(d_xs_new[j])
+
 
     return d_xs
 
@@ -357,7 +372,7 @@ def debug_print(s, *args):
 def format_ops(ops, sort_outputs=True):
   """Helper method for printing ops. Converts Tensor/Operation op to op.name,
   rest to str(op)."""
-
+    
   if hasattr(ops, '__iter__') and not isinstance(ops, str):
     l = [(op.name if hasattr(op, "name") else str(op)) for op in ops]
     if sort_outputs:

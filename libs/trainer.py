@@ -279,7 +279,7 @@ def train_segmentation_model(create_model_fn,
         summary_op = tf.summary.merge(list(summaries))
 
         session_config = tf.ConfigProto(
-            allow_soft_placement=True, log_device_placement=True)
+            allow_soft_placement=True, log_device_placement=False)
 
         # Save checkpoints regularly.
         saver = tf.train.Saver(max_to_keep=max_checkpoints_to_keep)
