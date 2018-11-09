@@ -91,7 +91,8 @@ def eval_segmentation_model_once(checkpoint_path,
                                  eval_dir,
                                  cropped_evaluation=False,
                                  image_summaries=False,
-                                 verbose=False):
+                                 verbose=False,
+                                 sess_config=None):
     return eval_segmentation_model(
         create_model_fn,
         create_input_fn,
@@ -102,7 +103,8 @@ def eval_segmentation_model_once(checkpoint_path,
         cropped_evaluation=cropped_evaluation,
         evaluate_single_checkpoint=checkpoint_path,
         image_summaries=image_summaries,
-        verbose=verbose)
+        verbose=verbose,
+        sess_config=sess_config)
 
 
 def eval_segmentation_model(create_model_fn,
@@ -114,7 +116,8 @@ def eval_segmentation_model(create_model_fn,
                             cropped_evaluation=False,
                             evaluate_single_checkpoint=None,
                             image_summaries=False,
-                            verbose=False):
+                            verbose=False,
+                            sess_config=None):
     ignore_label = eval_config.ignore_label
     num_classes, segmentation_model = create_model_fn()
 
@@ -186,7 +189,8 @@ def eval_segmentation_model(create_model_fn,
                             eval_op=eval_op,
                             final_op=value_op,
                             summary_op=summary_op,
-                            variables_to_restore=variables_to_restore)
+                            variables_to_restore=variables_to_restore,
+                            session_config=sess_config)
         tf.logging.info('Evaluation of `{}` over. Eval values: {}'.format(
                     curr_checkpoint, metric_results))
     else:
@@ -198,7 +202,8 @@ def eval_segmentation_model(create_model_fn,
                             eval_op=eval_op,
                             final_op=value_op,
                             summary_op=summary_op,
-                            variables_to_restore=variables_to_restore)
+                            variables_to_restore=variables_to_restore,
+                            session_config=sess_config)
         tf.logging.info('Evaluation over. Eval values: {}'.format(
                         metric_results))
 

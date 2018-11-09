@@ -49,6 +49,9 @@ flags.DEFINE_boolean('verbose', False,
                      'Show streamed mIoU updates during evaluation of '
                      'various checkpoint evaluation runs.')
 
+flags.DEFINE_boolean('limit_gpu_mem', False,
+                     'Set `allow_growth` in GPU options in Session Config.')
+
 
 def get_checkpoints_from_path(initial_checkpoint_path, checkpoint_dir):
     checkpoints = tf.train.get_checkpoint_state(checkpoint_dir)
@@ -107,6 +110,8 @@ def main(_):
     else:
         raise ValueError('Must specify an `eval_input_type` for evaluation.')
 
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = FLAGS.limit_gpu_mem
     if FLAGS.evaluate_all_from_checkpoint is not None:
         checkpoints_to_evaluate = get_checkpoints_from_path(
             FLAGS.evaluate_all_from_checkpoint, FLAGS.train_dir)
@@ -121,7 +126,8 @@ def main(_):
                                          eval_dir=FLAGS.eval_dir,
                                          cropped_evaluation=cropped_evaluation,
                                          image_summaries=FLAGS.image_summaries,
-                                         verbose=FLAGS.verbose)
+                                         verbose=FLAGS.verbose,
+                                         sess_config=config)
     else:
         eval_segmentation_model(
             create_model_fn,
@@ -133,7 +139,8 @@ def main(_):
             cropped_evaluation=cropped_evaluation,
             evaluate_single_checkpoint=FLAGS.evaluate_all_from_checkpoint,
             image_summaries=FLAGS.image_summaries,
-            verbose=FLAGS.verbose)
+            verbose=FLAGS.verbose,
+            sess_config=config)
 
 
 if __name__ == '__main__':
