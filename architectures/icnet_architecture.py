@@ -30,6 +30,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
                  main_loss_weight=1.0,
                  first_branch_loss_weight=0.0,
                  second_branch_loss_weight=0.0,
+                 upsample_train_logits=False,
                  add_summaries=True,
                  no_add_n_op=False,
                  scope=None):
@@ -47,6 +48,9 @@ class ICNetArchitecture(model.FastSegmentationModel):
         self._second_branch_loss_weight = second_branch_loss_weight
         self._add_summaries = add_summaries
         self._no_add_n_op = no_add_n_op
+        self._upsample_train_logits = upsample_train_logits
+        self._output_zoom_factor = (8
+            if self._pretrain_single_branch_mode else 4)
 
     @property
     def main_class_predictions_key(self):
@@ -132,10 +136,8 @@ class ICNetArchitecture(model.FastSegmentationModel):
                                 1, 1, activation_fn=None, normalizer_fn=None,
                                 scope=output_name_scope)
                 if not self._is_training: # evaluation output
-                    output_zoom_factor = (8
-                        if self._pretrain_single_branch_mode else 4)
                     predictions = self._dynamic_interpolation(predictions,
-                                            z_factor=output_zoom_factor)
+                                            z_factor=self._output_zoom_factor)
             # Main output used in both pretrain and regular train mode
             prediction_dict = {
                 self.main_class_predictions_key: predictions}
@@ -178,8 +180,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
                     [input_h/6, input_w/6], stride=[input_h/6, input_w/6])
             forth_pool = tf.image.resize_bilinear(forth_pool,
                     size=(input_h, input_w), align_corners=True)
-            # branch_merge = tf.add_n([input_features, full_pool,
-            #                          half_pool, third_pool, forth_pool])
+
             if self._no_add_n_op:
                 branch_merge = tf.add(input_features, full_pool)
                 branch_merge = tf.add(branch_merge, half_pool)
@@ -257,15 +258,12 @@ class ICNetArchitecture(model.FastSegmentationModel):
             scaled_labels = tf.image.resize_nearest_neighbor(
                 labels, logits_shape[1:3], align_corners=True)
             return scaled_labels
-        def _resize_logits_to_labels(logits, labels, s_factor=1):
-            labels_h, labels_w = labels.shape[1:3]
-            new_logits_size = (labels_h//s_factor, labels_w//s_factor)
-            scaled_logits = tf.image.resize_bilinear(
-                logits, new_logits_size, align_corners=True)
-            return scaled_logits
 
         main_preds = prediction_dict[self.main_class_predictions_key]
         with tf.name_scope('SegmentationLoss'): # 1/4 labels
+            if self._upsample_train_logits:
+                main_preds = self._dynamic_interpolation(main_preds,
+                            z_factor=self._output_zoom_factor)
             main_scaled_labels = _resize_labels_to_logits(
                 self._groundtruth_labels, main_preds)
             main_loss = self._classification_loss(main_preds,
@@ -280,6 +278,10 @@ class ICNetArchitecture(model.FastSegmentationModel):
                 second_aux_preds = prediction_dict[
                         self.second_aux_predictions_key]
                 with tf.name_scope('FirstBranchAuxLoss'): # 1/16 labels
+                    if self._upsample_train_logits:
+                        first_aux_preds = self._dynamic_interpolation(
+                            first_aux_preds,
+                            z_factor=self._output_zoom_factor)
                     first_scaled_labels = _resize_labels_to_logits(
                         self._groundtruth_labels, first_aux_preds)
                     first_aux_loss = self._classification_loss(
@@ -287,6 +289,10 @@ class ICNetArchitecture(model.FastSegmentationModel):
                     losses_dict[self.first_aux_loss_key] = (
                         self._first_branch_loss_weight * first_aux_loss)
                 with tf.name_scope('SecondBranchAuxLoss'): # 1/8 labels
+                    if self._upsample_train_logits:
+                        second_aux_preds = self._dynamic_interpolation(
+                            second_aux_preds,
+                            z_factor=self._output_zoom_factor)
                     second_scaled_labels = _resize_labels_to_logits(
                         self._groundtruth_labels, second_aux_preds)
                     second_aux_loss = self._classification_loss(
@@ -305,8 +311,7 @@ class ICNetArchitecture(model.FastSegmentationModel):
                             0.4 * psp_pretrain_loss)
         return losses_dict
 
-    def restore_map(self,
-                    fine_tune_checkpoint_type='segmentation'):
+    def restore_map(self, fine_tune_checkpoint_type='segmentation'):
         """Restore variables for checkpoints correctly"""
         if fine_tune_checkpoint_type not in [
                 'segmentation', 'classification', 'segmentation-finetune']:

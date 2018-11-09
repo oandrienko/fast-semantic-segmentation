@@ -66,6 +66,7 @@ def _build_pspnet_icnet_model(model_config, is_training, add_summaries,
         'feature_extractor': feature_extractor,
         'classification_loss': classification_loss,
         'use_aux_loss': use_aux_loss,
+        'upsample_train_logits': loss_config.upsample_logits,
         'add_summaries': add_summaries
     }
 

@@ -9,6 +9,8 @@ message Loss {
     optional bool use_auxiliary_loss = 2 [default=false];
 
     optional uint32 ignore_label = 3 [default=255];
+
+    optional bool upsample_logits = 4 [default=false];
 }
 
 message ClassificationLoss {

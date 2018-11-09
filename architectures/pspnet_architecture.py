@@ -34,6 +34,7 @@ class PSPNetArchitecture(model.FastSegmentationModel):
                 use_aux_loss=True,
                 main_loss_weight=1,
                 aux_loss_weight=0,
+                upsample_train_logits=False,
                 add_summaries=True,
                 scope=None):
         super(PSPNetArchitecture, self).__init__(num_classes=num_classes)
@@ -47,6 +48,8 @@ class PSPNetArchitecture(model.FastSegmentationModel):
         self._main_loss_weight = main_loss_weight
         self._aux_loss_weight = aux_loss_weight
         self._add_summaries = add_summaries
+        self._upsample_train_logits = upsample_train_logits
+        self._output_zoom_factor = 8.0
 
     @property
     def main_class_predictions_key(self):
@@ -89,7 +92,7 @@ class PSPNetArchitecture(model.FastSegmentationModel):
                         1, 1, activation_fn=None, normalizer_fn=None)
                 if not self._is_training: # evaluation
                     predictions = self._dynamic_interpolation(
-                            predictions, z_factor=8.0)
+                            predictions, z_factor=self._output_zoom_factor)
             # Outputs with auxilarary loss for training
             prediction_dict = {
                 self.main_class_predictions_key: predictions }
@@ -168,15 +171,12 @@ class PSPNetArchitecture(model.FastSegmentationModel):
             scaled_labels = tf.image.resize_nearest_neighbor(
                 labels, logits_shape[1:3], align_corners=True)
             return scaled_labels
-        def _resize_logits_to_labels(logits, labels, s_factor=1):
-            labels_h, labels_w = labels.shape[1:3]
-            new_logits_size = (labels_h//s_factor, labels_w//s_factor)
-            scaled_logits = tf.image.resize_bilinear(
-                logits, new_logits_size, align_corners=True)
-            return scaled_logits
 
         main_preds = prediction_dict[self.main_class_predictions_key]
         with tf.name_scope('SegmentationLoss'): # 1/8th labels
+            if self._upsample_train_logits:
+                main_preds = self._dynamic_interpolation(main_preds,
+                    z_factor=self._output_zoom_factor)
             main_scaled_labels = _resize_labels_to_logits(
                 self._groundtruth_labels, main_preds)
             main_loss = self._classification_loss(main_preds,
@@ -187,6 +187,9 @@ class PSPNetArchitecture(model.FastSegmentationModel):
         if self._use_aux_loss and self._is_training:
             aux_preds = prediction_dict[self.aux_predictions_key]
             with tf.name_scope('AuxLoss'): # 1/8th labels
+                if self._upsample_train_logits:
+                    aux_preds = self._dynamic_interpolation(aux_preds,
+                        z_factor=self._output_zoom_factor)
                 aux_scaled_labels = _resize_labels_to_logits(
                     self._groundtruth_labels, aux_preds)
                 first_aux_loss = self._classification_loss(aux_preds,
@@ -195,8 +198,7 @@ class PSPNetArchitecture(model.FastSegmentationModel):
                     self._aux_loss_weight * first_aux_loss)
         return losses_dict
 
-    def restore_map(self,
-                    fine_tune_checkpoint_type='segmentation'):
+    def restore_map(self, fine_tune_checkpoint_type='classification'):
         """Restore variables for checkpoints correctly"""
         if fine_tune_checkpoint_type not in [
                     'segmentation', 'classification']:
