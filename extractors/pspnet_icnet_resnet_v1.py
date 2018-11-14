@@ -1,9 +1,8 @@
 """ResNet V1 feature extracter interface implementation."""
 import tensorflow as tf
-# from nets import resnet_utils
 from tensorflow.contrib.slim.nets import resnet_utils
 
-from . import dilated_resnet_v1
+from third_party import dilated_resnet_v1
 from architectures import pspnet_architecture
 
 

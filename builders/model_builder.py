@@ -3,13 +3,16 @@ from builders import losses_builder
 from protos import model_pb2
 
 from extractors import pspnet_icnet_resnet_v1
+from extractors import pspnet_icnet_mobilenet_v2
 from architectures import pspnet_architecture
 from architectures import icnet_architecture
 
 
 PSPNET_ICNET_FEATURE_EXTRACTER = {
     'dilated_resnet50':
-        pspnet_icnet_resnet_v1.PSPNetICNetDilatedResnet50FeatureExtractor
+        pspnet_icnet_resnet_v1.PSPNetICNetDilatedResnet50FeatureExtractor,
+    'mobilenet':
+        pspnet_icnet_mobilenet_v2.PSPNetICNetMobilenetFeatureExtractor
 }
 
 
