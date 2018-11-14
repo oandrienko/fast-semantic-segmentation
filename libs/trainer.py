@@ -289,7 +289,8 @@ def train_segmentation_model(create_model_fn,
         def train_step_mem(sess, train_op, global_step, train_step_kwargs):
             start_time = time.time()
             run_metadata = tf.RunMetadata()
-            options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+            options = tf.RunOptions(trace_level=(tf.RunOptions.FULL_TRACE
+                if log_memory else tf.RunOptions.NO_TRACE))
             total_loss, np_global_step = sess.run([train_op, global_step],
                                         options=options,
                                         run_metadata=run_metadata)
