@@ -11,7 +11,7 @@ from architectures import icnet_architecture
 PSPNET_ICNET_FEATURE_EXTRACTER = {
     'dilated_resnet50':
         pspnet_icnet_resnet_v1.PSPNetICNetDilatedResnet50FeatureExtractor,
-    'mobilenet':
+    'dilated_mobilenet':
         pspnet_icnet_mobilenet_v2.PSPNetICNetMobilenetFeatureExtractor
 }
 
