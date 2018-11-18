@@ -24,11 +24,13 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('input_path', None,
                     'Path to an image or a directory of images.')
+flags.mark_flag_as_required('input_path')
 
 flags.DEFINE_string('input_shape', '1024,2048,3', # default Cityscapes values
                     'The shape to use for inference. This should '
                     'be in the form [height, width, channels]. A batch '
                     'dimension is not supported for this test script.')
+flags.mark_flag_as_required('input_shape')
 
 flags.DEFINE_string('pad_to_shape', '1025,2049', # default Cityscapes values
                      'Pad the input image to the specified shape. Must have '
@@ -37,12 +39,14 @@ flags.DEFINE_string('pad_to_shape', '1025,2049', # default Cityscapes values
 flags.DEFINE_string('config_path', None,
                     'Path to a pipeline_pb2.TrainEvalPipelineConfig config '
                     'file.')
+flags.mark_flag_as_required('config_path')
 
 flags.DEFINE_string('trained_checkpoint', None,
                     'Path to trained checkpoint, typically of the form '
                     'path/to/model.ckpt')
+flags.mark_flag_as_required('trained_checkpoint')
 
-flags.DEFINE_string('output_dir', None, 'Path to write outputs images.')
+flags.DEFINE_string('output_dir', './', 'Path to write outputs images.')
 
 flags.DEFINE_boolean('label_ids', False,
                      'Whether the output should be label ids.')
