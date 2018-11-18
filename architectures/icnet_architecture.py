@@ -163,7 +163,8 @@ class ICNetArchitecture(model.FastSegmentationModel):
         steps, begin training all branches as normal.
         """
         with tf.variable_scope('FastPSPModule'):
-            input_n, input_h, input_w, input_c = input_features.get_shape()
+            (input_n, input_h, input_w,
+              input_c) = input_features.get_shape().as_list()
             full_pool = slim.avg_pool2d(input_features,
                     [input_h, input_w], stride=[input_h, input_w])
             full_pool = tf.image.resize_bilinear(full_pool,
