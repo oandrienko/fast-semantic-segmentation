@@ -4,11 +4,11 @@
 
 In order to properly run all scripts in this repository, ensure you have all the following dependencies installed in your environment:
 
-* Tensorflow
-* Protobuf 3.0.0
-* Numpy
-* Scipy
-* Matplotlib
+* **Tensorflow** (tested with v1.8)
+* **Protobuf 3.0.0**
+* **Numpy**
+* Matplotlib (for compression visualization)
+* PIL (for loading images for inference)
 * Toposort (for memory saving gradients support)
 
 ## Install libraries using pip
@@ -17,17 +17,15 @@ The easiest way to get started is to install all the dependencies using pip. Sta
 
 ```
 # For CPU
-pip install tensorflow
+pip install tensorflow==1.8.0
 # For GPU
-pip install tensorflow-gpu
+pip install tensorflow-gpu==1.8.0
 ```
 
 Then for the rest of the main dependencies
 
 ```
-pip install --user numpy
-pip install --user scipy
-pip install --user matplotlib
+pip install --user numpy matplotlib pillow toposort
 ```
 
 ## Install Protobuf Compiler
