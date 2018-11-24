@@ -122,10 +122,10 @@ def add_variable_to_graph(output_graph, var_name, init_value,
     return new_var
 
 
-
-
 def get_vars_from_checkpoint(session, checkpoint, checkpoint_version):
     var_list = {}
+    meta_graph_file = checkpoint + '.meta'
+    saver = saver_lib.import_meta_graph(meta_graph_file)
     reader = pywrap_tensorflow.NewCheckpointReader(checkpoint)
     var_to_shape_map = reader.get_variable_to_shape_map()
     for key in sorted(var_to_shape_map):
@@ -136,8 +136,5 @@ def get_vars_from_checkpoint(session, checkpoint, checkpoint_version):
         except KeyError:
             continue
         var_list[key] = tensor
-    saver = saver_lib.Saver(
-            var_list=var_list,
-            write_version=checkpoint_version)
     saver.restore(session, checkpoint)
     return var_list

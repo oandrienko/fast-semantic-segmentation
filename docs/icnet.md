@@ -93,15 +93,15 @@ tensorboard --logdir /tmp/icnet_1.0_953_resnet_v1_stage_1_EVAL
 
 ### Stage 2 - Compression and Retraining
 
-We will create a directory for storing our compressed model at `/tmp/icnet_1.0_953_resnet_v1_stage_1_COMPRESS`. Other than the source checkpoint identified through Tensorboard, we will also need to point to the eval GraphDef which will be found in our evaluation folder. Run the compression script with
+We will create a directory for storing our compressed model at `/tmp/icnet_1.0_953_resnet_v1_stage_1_COMPRESS`. Run the compression script with
 
 ```
 python compress.py \
-    --input_graph /tmp/icnet_1.0_953_resnet_v1_stage_1_EVAL/eval_graph.pbtxt \
+    --prune_config configs/compression/icnet_resnet_v1_pruner_v2.config \
     --input_checkpoint /tmp/icnet_1.0_953_resnet_v1_stage_1_TRAIN/model.ckpt-116511 \
     --output_dir /tmp/icnet_1.0_953_resnet_v1_stage_1_COMPRESS \
-    --config_path configs/compression/icnet_resnet_v1_pruner_v2.config \
-    --compression_factor 0.5 # We will compress to half
+    --compression_factor 0.5 \  # We will compress to half
+    --interactive               # If we want to visualize the kernels being removed
 ```
 
 Now that we have a compressed model, we need to retrain. As with the first stage config, copy and modify the supplied stage 2 configuration file located at:

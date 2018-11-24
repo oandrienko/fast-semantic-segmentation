@@ -81,10 +81,10 @@ class FilterPruner(object):
 
     def _init_pruning_graph(self, input_checkpoint):
         # Import graph def to use in the session
-        tf.import_graph_def(self.input_graph_def, name="")
         session = tf.Session()
         vars_dict = graph_utils.get_vars_from_checkpoint(
                     session, input_checkpoint, self.checkpoint_version)
+        self.input_graph_def = tf.get_default_graph().as_graph_def()
         # Grab all the variables found in the checkpoint
         self.trainable_vars = vars_dict.keys()
         self.nodes_map = graph_utils.create_nodes_map(self.input_graph_def)
@@ -368,12 +368,11 @@ class FilterPruner(object):
         for next_node in next_node_names:
             self._create_pruner_specs_recursively(next_node)
 
-    def compress(self, input_graph_def, input_checkpoint, skip_apply=False):
-        self.input_graph_def = input_graph_def
-        if self.clear_devices:
-            graph_utils.clear_node_devices(self.input_graph_def.node)
+    def compress(self, input_checkpoint, skip_apply=False):
         # Create a session and graph all variable values
         self._init_pruning_graph(input_checkpoint)
+        if self.clear_devices:
+            graph_utils.clear_node_devices(self.input_graph_def.node)
         self.neighbors = self._create_adjacency_list(self.output_node)
         # Traverse graph and collect all nodes and dependencies
         self.state = GraphTraversalState(

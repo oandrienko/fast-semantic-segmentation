@@ -39,23 +39,22 @@ flags = tf.app.flags
 
 FLAGS = flags.FLAGS
 
+flags.DEFINE_string('input_checkpoint', None,
+                    'TensorFlow variables file to load.')
+flags.mark_flag_as_required('input_checkpoint')
+
+flags.DEFINE_string('prune_config', None,
+                    'The compression config to use to compression.')
+flags.mark_flag_as_required('prune_config')
+
 flags.DEFINE_float('compression_factor', 0.5,
                    'The compression factor to apply when prunin filters.')
-
-flags.DEFINE_string('input_graph', '',
-                    'TensorFlow \'GraphDef\' file to load.')
-
-flags.DEFINE_string('input_checkpoint', '',
-                    'TensorFlow variables file to load.')
 
 flags.DEFINE_boolean('input_binary', False,
                      'Whether the input files are in binary format.')
 
 flags.DEFINE_string('output_dir', '',
                     'Location to save prunned output checkpoints')
-
-flags.DEFINE_string('config_path', '',
-                    'The compression config to use to compression.')
 
 flags.DEFINE_string('skippable_nodes', '',
                     'Nodes to not validate when pruning.')
@@ -69,13 +68,16 @@ flags.DEFINE_boolean('soft_apply', False,
 
 
 def main(unused_args):
-    if not tf.gfile.Exists(FLAGS.input_graph):
-        print('The `input_graph` specified does not exist.')
+    if (not tf.train.checkpoint_exists(FLAGS.input_checkpoint)
+        or not tf.gfile.Exists(FLAGS.input_checkpoint + '.meta')):
+        print('The input checkpoint prefix specified from '
+              '`FLAGS.input_checkpoint` must point to a location with '
+              'valid meta and data cehckpoint files.')
         return -1
 
     output_path_name = "pruned_model.ckpt"
     compression_config = compressor_pb2.CommpressionConfig()
-    with tf.gfile.GFile(FLAGS.config_path, "r") as f:
+    with tf.gfile.GFile(FLAGS.prune_config, "r") as f:
         proto_str = f.read()
         text_format.Merge(proto_str, compression_config)
     compression_strategy_config = compression_config.compression_strategy
@@ -89,17 +91,9 @@ def main(unused_args):
         interactive_mode=FLAGS.interactive,
         soft_apply=FLAGS.soft_apply)
 
-    input_graph_def = tf.GraphDef()
-    mode = "rb" if FLAGS.input_binary else "r"
-    with tf.gfile.FastGFile(FLAGS.input_graph, mode) as f:
-        if FLAGS.input_binary:
-            input_graph_def.ParseFromString(f.read())
-        else:
-            text_format.Merge(f.read(), input_graph_def)
     tf.gfile.MakeDirs(FLAGS.output_dir)
-
     compressor = compression_fn()
-    compressor.compress(input_graph_def, FLAGS.input_checkpoint)
+    compressor.compress(FLAGS.input_checkpoint)
     compressor.save(
         output_checkpoint_dir=FLAGS.output_dir,
         output_checkpoint_name=output_path_name)
