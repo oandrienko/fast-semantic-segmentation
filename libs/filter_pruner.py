@@ -87,7 +87,7 @@ class FilterPruner(object):
                     session, input_checkpoint, self.checkpoint_version)
         # Grab all the variables found in the checkpoint
         self.trainable_vars = vars_dict.keys()
-        self.nodes_map = graph_utils. create_nodes_map(self.input_graph_def)
+        self.nodes_map = graph_utils.create_nodes_map(self.input_graph_def)
         self.values_map = graph_utils.create_var_const_map(
                     session, self.trainable_vars)
         # Make sure to close the session, we will make a new one later
@@ -186,7 +186,7 @@ class FilterPruner(object):
         # Apply by actually changing shape, or simulate pruning
         pruned_weights = np.copy(weights)
         if not self.soft_apply:
-            pruned_weights = pruned_value[:,:,:,prune_idxs]
+            pruned_weights = pruned_weights[:,:,:,prune_idxs]
         else:
             pruned_weights[:,:,:,~prune_idxs] = 0
         # Create new Conv layer with pruned weights
@@ -264,7 +264,6 @@ class FilterPruner(object):
                 # TODO(oandrien): This is redundant, should fix traversal
                 # instead. Look ahead if we havent encountered the node yet.
                 if source_node_name not in pruned_node_idxs:
-                    import pdb; pdb.set_trace()
                     weights_node_name = self._get_conv_weights_node_name(
                         source_node_name)
                     source_node_idxs = self._get_prune_idxs(weights_node_name)
@@ -386,8 +385,6 @@ class FilterPruner(object):
     def save(self, output_checkpoint_dir, output_checkpoint_name):
         output_checkpoint_path = os.path.join(
                 output_checkpoint_dir, output_checkpoint_name)
-        # output_def_path = os.path.join(
-        #         output_checkpoint_dir, "prunned_graph.pbtxt")
         output_graph = tf.Graph()
         with output_graph.as_default():
             session = tf.Session(graph=output_graph)
@@ -405,7 +402,6 @@ class FilterPruner(object):
                 var_list.append(new_var)
             # To avoid error with searching for global step
             global_step = tf.train.get_or_create_global_step()
-            var_list.append(global_step)
             # Need to run init to assign all our new variable vals
             session.run(tf.variables_initializer(var_list=var_list))
             write_saver = tf.train.Saver(
@@ -413,7 +409,4 @@ class FilterPruner(object):
             write_saver.save(session, output_checkpoint_path)
             print('Saving pruned model checkpoint to {}'.format(
                 output_checkpoint_path))
-            # output_graph_def = output_graph.as_graph_def()
-            # f = tf.gfile.FastGFile(output_def_path, "w")
-            # f.write(str(output_graph_def))
         session.close()
