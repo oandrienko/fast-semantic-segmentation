@@ -23,9 +23,9 @@ The table below contains a download link as well as information about each model
 
 | Model  | Val. Set mIoU | Compress. Factor | Parameters | FLOPs |
 | ------------ | :--------------: | :-------------: | :-------------: | :-------------:
-| [0818_pspnet50_1.0_713_resnet_v1](https://drive.google.com/file/d/13E8KvN43QZKi4uf42ECdaReT_FYvdY-m/view?usp=sharing) | 73.8% | 1.0 | 46.53M | 2942.59B |
-| [0818_icnet_1.0_1025_resnet_v1](https://drive.google.com/file/d/1BRcV0fWK6mz4bNc3dp3ZPJTGgGHnsE8O/view?usp=sharing) | 69.7% | 1.0 | 26.82M | 246.95B |
-| [0818_icnet_0.5_1025_resnet_v1](https://drive.google.com/file/d/152hNFko0J_Lt7QiEBG_apZ0a4hH3L6Cs/view?usp=sharing) | 65.9% | 0.5 | 6.71M | 63.20B |
+| [0818_pspnet50_1.0_713_resnet_v1](https://drive.google.com/file/d/1pEs6dFg88CH8LNNUSg5-ebcqu9qk5C-h/view?usp=sharing) | 73.8% | 1.0 | 46.53M | 2942.59B |
+| [0818_icnet_1.0_1025_resnet_v1](https://drive.google.com/file/d/1-cBelv2inpmiCgQdl-sxhP1IUNalMisT/view?usp=sharing) | 69.8% | 1.0 | 26.82M | 246.95B |
+| [0818_icnet_0.5_1025_resnet_v1](https://drive.google.com/file/d/1YxgDJ9SrKi_KV_Y0DsKzGDNJEztV21zx/view?usp=sharing) | 65.8% | 0.5 | 6.71M | 63.20B |
 
 **‡** **The mIoU here is based on whole-image inference**. This means that evaluation is done with one forward
 pass of the network. In the case of Cityscapes, that means the 1024x2048 resolution images are evaluated without cropping and without evaluating subdivided patches (sliding evaluation).

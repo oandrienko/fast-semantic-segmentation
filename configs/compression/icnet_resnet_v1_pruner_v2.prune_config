@@ -11,10 +11,9 @@ compression_strategy {
 
         input { name: "Preprocessor/sub" }
 
-        output { name: "Predictions/postrain/Conv2D" }
+        output { name: "Predictions/Conv/Conv2D" }
 
         node_scope: "SharedFeatureExtractor/resnet_v1_50"
-
 
         #
         # ** MAIN_SHORTCUT_1: Block_1 - Unit_1 w/ Conv Shortcut **
@@ -259,10 +258,10 @@ compression_strategy {
         node {
             node_scope: ""
             target {
-                name: "CascadeFeatureFusion_0/Conv/Conv2D"
+                name: "CascadeFeatureFusion/Conv/Conv2D"
             }
             following {
-                name: "CascadeFeatureFusion_0/Conv/BatchNorm/FusedBatchNorm"
+                name: "CascadeFeatureFusion/Conv/BatchNorm/FusedBatchNorm"
             }
             # Following Dilated Conv
             following {
@@ -272,14 +271,14 @@ compression_strategy {
         node {
             node_scope: ""
             target {
-                name: "CascadeFeatureFusion_0/DilatedConv/Conv2D"
+                name: "CascadeFeatureFusion/DilatedConv/Conv2D"
             }
             # MAIN FUSION BLOCK 1
             source {
-                name: "CascadeFeatureFusion_0/Conv/Conv2D"
+                name: "CascadeFeatureFusion/Conv/Conv2D"
             }
             following {
-                name: "CascadeFeatureFusion_0/DilatedConv/BatchNorm/FusedBatchNorm"
+                name: "CascadeFeatureFusion/DilatedConv/BatchNorm/FusedBatchNorm"
             }
         }
 
@@ -297,7 +296,7 @@ compression_strategy {
             }
             # Main Predictions
             following {
-                name: "Predictions/postrain/Conv2D"
+                name: "Predictions/Conv/Conv2D"
             }
         }
         node {

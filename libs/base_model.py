@@ -1,4 +1,4 @@
-"""Abstract semantic segmentation model.
+r"""Abstract semantic segmentation model.
 
 Defines a base class to be used by groups of semantic segmentation models in
 the project. Any supporting scripts such as trainers, evaluators and
@@ -10,12 +10,17 @@ as followed for both training and evaluation
 Training flow:
 inputs -> preprocess -> predict -> loss -> outputs
 """
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from abc import ABCMeta
 from abc import abstractmethod
 
 import tensorflow as tf
 
-slim = tf.contrib.slim
+
+slim = tf.contrib.slim  # pylint: disable=C0103,E1101
 
 
 class FastSegmentationModel(object):
@@ -29,10 +34,12 @@ class FastSegmentationModel(object):
 
     @property
     def shared_feature_extractor_scope(self):
+        """Scope for feature extracter."""
         return 'SharedFeatureExtractor'
 
     @property
     def num_classes(self):
+        """Training classes for the model."""
         return self._num_classes
 
     @abstractmethod
@@ -54,7 +61,7 @@ class FastSegmentationModel(object):
         pass
 
     @abstractmethod
-    def predict(self, preprocessed_inputs, true_image_shapes):
+    def predict(self, preprocessed_inputs):
         """Run model inference on a set of input images.
 
         When training, the output should be passed to the loss method
@@ -69,8 +76,8 @@ class FastSegmentationModel(object):
         pass
 
     @abstractmethod
-    def loss(self, prediction_dict, true_image_shapes):
-        """Using the groundtruth, computes a loss tensor to be used for training.
+    def loss(self, prediction_dict):
+        """Computes a loss tensor to be used for training.
 
         Note that the class must have been supplied the groundtruth tensors
         first with the provide groundtruth method.
@@ -84,8 +91,7 @@ class FastSegmentationModel(object):
         """
         pass
 
-    def provide_groundtruth(self,
-                          groundtruth_labels):
+    def provide_groundtruth(self, groundtruth_labels):
         """Provide groundtruth tensors.
 
         Args:

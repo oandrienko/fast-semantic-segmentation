@@ -1,8 +1,12 @@
-"""ResNet V1 feature extracter interface implementation."""
+r"""ResNet V1 feature extracter interface implementation."""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import tensorflow as tf
 from tensorflow.contrib.slim.nets import resnet_utils
-
 from third_party import dilated_resnet_v1
+
 from architectures import pspnet_architecture
 
 
@@ -10,7 +14,7 @@ slim = tf.contrib.slim
 
 
 class PSPNetICNetResnetV1FeatureExtractor(
-                pspnet_architecture.PSPNetFeatureExtractor):
+        pspnet_architecture.PSPNetFeatureExtractor):
     """ICNet feature extractor implementation."""
 
     _channel_means = [123.68, 116.779, 103.939]
@@ -37,7 +41,7 @@ class PSPNetICNetResnetV1FeatureExtractor(
             reuse_weights, weight_decay)
 
     def preprocess(self, raw_inputs):
-        channel_means = self._channel_means # RGB VGG ImageNet mean
+        channel_means = self._channel_means  # RGB VGG ImageNet mean
         return raw_inputs - [[channel_means]]
 
     def _extract_features(self, preprocessed_inputs, scope):
@@ -51,13 +55,13 @@ class PSPNetICNetResnetV1FeatureExtractor(
                 batch_norm_scale=True,
                 weight_decay=self._weight_decay)):
             _, activations = self._resnet_model(
-                    preprocessed_inputs,
-                    filter_scale=self._filter_scale,
-                    mid_downsample=self._mid_downsample,
-                    num_classes=None,
-                    is_training=(self._is_training and self._train_batch_norm),
-                    global_pool=False,
-                    output_stride=self._features_stride)
+                preprocessed_inputs,
+                filter_scale=self._filter_scale,
+                mid_downsample=self._mid_downsample,
+                num_classes=None,
+                is_training=(self._is_training and self._train_batch_norm),
+                global_pool=False,
+                output_stride=self._features_stride)
             half_res_features = activations[half_res_scope]
             quarter_res_features = activations[quarter_res_scope]
             psp_aux_features = activations[psp_aux_scope]

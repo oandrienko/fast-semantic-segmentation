@@ -22,10 +22,14 @@ message ICNet {
     // The filter compression factor when applying filter/channel pruning
     optional float filter_scale = 8;
 
+    // The PSP Module pooling factors. This is a list of reduction factors
+    // between (1.0, 0.0].
+    repeated float pooling_factors = 9;
+
     // Used to pretrain a base PSPNet-like base model. This pretrained
     // model should be use to initialize ICNet for training all branches.
-    optional bool pretrain_single_branch_mode = 9 [default=false];
+    optional bool pretrain_single_branch_mode = 10 [default=false];
 
     // prevents the use of tf.add_n for merging branches
-    optional bool mobile_ops_only = 10 [default=false];
+    optional bool mobile_ops_only = 11 [default=false];
 }

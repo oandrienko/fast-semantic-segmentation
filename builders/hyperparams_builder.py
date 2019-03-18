@@ -1,4 +1,11 @@
+r"""Build segmentation model hyper parameters."""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import tensorflow as tf
+
+from libs import compressible_ops as ops
 from protos import hyperparams_pb2
 
 slim = tf.contrib.slim
@@ -6,7 +13,7 @@ slim = tf.contrib.slim
 
 def _build_regularizer(regularizer):
     regularizer_oneof = regularizer.WhichOneof('regularizer_oneof')
-    if  regularizer_oneof == 'l1_regularizer':
+    if regularizer_oneof == 'l1_regularizer':
         return slim.l1_regularizer(scale=float(
             regularizer.l1_regularizer.weight))
     if regularizer_oneof == 'l2_regularizer':
@@ -24,10 +31,9 @@ def _build_initializer(initializer):
             stddev=initializer.truncated_normal_initializer.stddev)
     if initializer_oneof == 'variance_scaling_initializer':
         enum_descriptor = (hyperparams_pb2.VarianceScalingInitializer.
-                            DESCRIPTOR.enum_types_by_name['Mode'])
-        mode = enum_descriptor.values_by_number[initializer.
-                                            variance_scaling_initializer.
-                                            mode].name
+                           DESCRIPTOR.enum_types_by_name['Mode'])
+        mode = enum_descriptor.values_by_number[
+            initializer. variance_scaling_initializer.mode].name
         return slim.variance_scaling_initializer(
             factor=initializer.variance_scaling_initializer.factor,
             mode=mode,
@@ -47,18 +53,16 @@ def build(hyperparams_config, is_training):
             'scale': batch_norm.scale,
             'epsilon': batch_norm.epsilon,
             'is_training': is_training and batch_norm.train}
-
-    affected_ops = [slim.conv2d,
+    affected_ops = [
+        slim.conv2d,
         slim.separable_conv2d, slim.conv2d_transpose]
-    with slim.arg_scope(
-        affected_ops,
-        weights_regularizer=_build_regularizer(
-            hyperparams_config.regularizer),
-        weights_initializer=_build_initializer(
-            hyperparams_config.initializer),
-        activation_fn=tf.nn.relu6,
-        normalizer_fn=slim.batch_norm,
-        normalizer_params=batch_norm_params):
-
+    with slim.arg_scope(affected_ops,
+                        weights_regularizer=_build_regularizer(
+                            hyperparams_config.regularizer),
+                        weights_initializer=_build_initializer(
+                            hyperparams_config.initializer),
+                        activation_fn=tf.nn.relu6,
+                        normalizer_fn=slim.batch_norm,
+                        normalizer_params=batch_norm_params):
         with slim.arg_scope([slim.batch_norm], **batch_norm_params) as sc:
             return sc

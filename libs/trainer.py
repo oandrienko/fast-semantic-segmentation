@@ -4,12 +4,12 @@ from __future__ import print_function
 
 import functools
 import time
+
 import tensorflow as tf
 
+from libs import standard_fields as fields
 from third_party import model_deploy
 from third_party import mem_util
-
-from builders import model_builder
 from builders import dataset_builder
 from builders import preprocessor_builder
 from builders import optimizer_builder
@@ -36,7 +36,7 @@ def create_training_input(create_input_fn,
         return tensor_dict
 
     tensor_dict = cast_and_reshape(tensor_dict,
-                    dataset_builder._IMAGE_FIELD)
+                    fields.GroundtruthFields.input_image)
 
     if preprocess_fn is not None:
         preprocessor = preprocess_fn()
@@ -63,9 +63,10 @@ def create_training_model_losses(input_queue, create_model_fn, train_config,
             quant_delay=train_config.quantize_with_delay)
 
     read_data_list = input_queue.dequeue()
+
     def extract_images_and_targets(read_data):
-        images = read_data[dataset_builder._IMAGE_FIELD]
-        labels = read_data[dataset_builder._LABEL_FIELD]
+        images = read_data[fields.GroundtruthFields.input_image]
+        labels = read_data[fields.GroundtruthFields.output_mask]
         return (images, labels)
     (images, labels) = zip(*map(extract_images_and_targets, [read_data_list]))
 
@@ -157,10 +158,10 @@ def train_segmentation_model(create_model_fn,
             # Note: it is assumed that any loss created by `model_fn`
             # is collected at the tf.GraphKeys.LOSSES collection.
             model_fn = functools.partial(create_training_model_losses,
-                                    create_model_fn=create_model_fn,
-                                    train_config=train_config,
-                                    train_dir=train_dir,
-                                    gradient_checkpoints=gradient_checkpoints)
+                create_model_fn=create_model_fn,
+                train_config=train_config,
+                train_dir=train_dir,
+                gradient_checkpoints=gradient_checkpoints)
             clones = model_deploy.create_clones(deploy_config,
                 model_fn, [input_queue])
             first_clone_scope = deploy_config.clone_scope(0)
@@ -185,7 +186,7 @@ def train_segmentation_model(create_model_fn,
         for loss in tf.get_collection(tf.GraphKeys.LOSSES, first_clone_scope):
             summaries.add(tf.summary.scalar('Losses/%s' % loss.op.name, loss))
 
-        with tf.device(deploy_config.optimizer_device()): # CPU of each worker
+        with tf.device(deploy_config.optimizer_device()):  # CPU of each worker
             (training_optimizer,
               optimizer_summary_vars) = optimizer_builder.build(
                 train_config.optimizer)
@@ -199,7 +200,7 @@ def train_segmentation_model(create_model_fn,
 
         # Fine tune from classification or segmentation checkpoints
         trainable_vars = tf.get_collection(
-                              tf.GraphKeys.TRAINABLE_VARIABLES)
+            tf.GraphKeys.TRAINABLE_VARIABLES)
         if train_config.fine_tune_checkpoint:
             if not train_config.fine_tune_checkpoint_type:
                 raise ValueError('Must specify `fine_tune_checkpoint_type`.')
@@ -209,19 +210,20 @@ def train_segmentation_model(create_model_fn,
                 train_config.fine_tune_checkpoint)
 
             variables_to_restore = segmentation_model.restore_map(
-              fine_tune_checkpoint_type=train_config.fine_tune_checkpoint_type)
+                fine_tune_checkpoint_type=(
+                    train_config.fine_tune_checkpoint_type))
 
             init_fn = slim.assign_from_checkpoint_fn(
-                        train_config.fine_tune_checkpoint,
-                        variables_to_restore,
-                        ignore_missing_vars=True)
+                train_config.fine_tune_checkpoint,
+                variables_to_restore,
+                ignore_missing_vars=True)
 
             if train_config.freeze_fine_tune_backbone:
                 tf.logging.info('Freezing %s scope from checkpoint.')
                 non_frozen_vars = []
                 for var in trainable_vars:
                     if not var.op.name.startswith(
-                      segmentation_model.shared_feature_extractor_scope):
+                        segmentation_model.shared_feature_extractor_scope):
                         non_frozen_vars.append(var)
                         tf.logging.info('Training variable: %s', var.op.name)
                 trainable_vars = non_frozen_vars
@@ -233,19 +235,19 @@ def train_segmentation_model(create_model_fn,
         # for the last layer if we have trouble with training
         # CPU of common ps server
         with tf.device(deploy_config.optimizer_device()):
-            reg_losses = (None if train_config.add_regularization_loss
-                               else [])
+            reg_losses = (
+                None if train_config.add_regularization_loss else [])
             total_loss, grads_and_vars = model_deploy.optimize_clones(
                 clones, training_optimizer,
                 regularization_losses=reg_losses,
                 var_list=trainable_vars)
-            total_loss = tf.check_numerics(total_loss,
-                                          'LossTensor is inf or nan.')
+            total_loss = tf.check_numerics(
+                total_loss, 'LossTensor is inf or nan.')
             summaries.add(
                 tf.summary.scalar('Losses/TotalLoss', total_loss))
 
-            grad_updates = training_optimizer.apply_gradients(grads_and_vars,
-                                                    global_step=global_step)
+            grad_updates = training_optimizer.apply_gradients(
+                grads_and_vars, global_step=global_step)
             update_ops.append(grad_updates)
             update_op = tf.group(*update_ops, name='update_barrier')
             with tf.control_dependencies([update_op]):
@@ -259,9 +261,9 @@ def train_segmentation_model(create_model_fn,
             summ_first_clone_scope = (first_clone_scope + '/'
                 if first_clone_scope else '')
             main_labels = graph.get_tensor_by_name(
-                '%sSegmentationLoss/Reshape:0'% summ_first_clone_scope)
+                '%sSegmentationLoss/Reshape:0' % summ_first_clone_scope)
             main_preds = graph.get_tensor_by_name(
-                '%sSegmentationLoss/Reshape_1:0'% summ_first_clone_scope)
+                '%sSegmentationLoss/Reshape_1:0' % summ_first_clone_scope)
             main_preds = tf.cast(main_preds * pixel_scaling, tf.uint8)
             summaries.add(
               tf.summary.image('VerifyTrainImages/Predictions', main_preds))
@@ -303,8 +305,9 @@ def train_segmentation_model(create_model_fn,
                         np_global_step, total_loss, time_elapsed)
 
             if log_memory:
-                mem_use = mem_util.peak_memory(run_metadata)['/gpu:0']/1e6
-                tf.logging.info('Memory used: %.2f MB',(mem_use))
+                mem_use = mem_util.peak_memory(run_metadata)
+                master_device_mem = mem_use.values()[0] / 1e6 # '/gpu:0'
+                tf.logging.info('Memory used: %.2f MB', (master_device_mem))
 
             if 'should_stop' in train_step_kwargs:
                 should_stop = sess.run(train_step_kwargs['should_stop'])

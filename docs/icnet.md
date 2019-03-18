@@ -68,7 +68,7 @@ To start a single-GPU training session, make a directory to save checkpoints to.
 ```
 # The checkpointing nodes are supplied in the script by default for ICNet
 python train_mem_saving.py \
-    --config_path configs/two_stage_icnet_1.0_953_resnet_v1_stage_1.config_CUSTOM.config \
+    --config_path configs/two_stage_icnet_1.0_953_resnet_v1_stage_1_CUSTOMIZED.config \
     --logdir /tmp/icnet_1.0_953_resnet_v1_stage_1_TRAIN \
     --test_image_summaries \
     --log_memory
@@ -79,7 +79,7 @@ To see evaluation results during training, create another directory at `/tmp/icn
 ```
 # set CUDA_VISIBLE_DEVICES to another GPU
 python eval.py \
-    --config_path configs/two_stage_icnet_1.0_953_resnet_v1_stage_1.config_CUSTOM.config \
+    --config_path configs/two_stage_icnet_1.0_953_resnet_v1_stage_1_CUSTOMIZED.config \
     --train_dir /tmp/icnet_1.0_953_resnet_v1_stage_1_TRAIN \
     --eval_dir /tmp/icnet_1.0_953_resnet_v1_stage_1_EVAL \
     --verbose # will log mIoU accuracy
@@ -93,19 +93,30 @@ tensorboard --logdir /tmp/icnet_1.0_953_resnet_v1_stage_1_EVAL
 
 ### Stage 2 - Compression and Retraining
 
-We will create a directory for storing our compressed model at `/tmp/icnet_1.0_953_resnet_v1_stage_1_COMPRESS`. Run the compression script with
+We will create a directory for storing our compressed model at `/tmp/icnet_1.0_1025_resnet_v1_stage_1_COMPRESS`. Before running compression, we must first export a inference graph without training nodes. To do this, first run the export script with
+
+```
+python export.py \
+    --input_shape 1024,2048,3 \
+    --pad_to_shape 1025,2049 \
+    --config_path configs/two_stage_icnet_1.0_953_resnet_v1_stage_1_CUSTOMIZED.config \
+    --trained_checkpoint tmp/test_cleanup_icnet/model.ckpt-XXX-XXX # replace with your best model from previous run
+    --output_dir /tmp/icnet_1.0_1025_resnet_v1_stage_1_COMPRESS
+```
+
+Then, using the output inference graph from the export script, run the compression script with
 
 ```
 python compress.py \
     --prune_config configs/compression/icnet_resnet_v1_pruner_v2.config \
-    --input_checkpoint /tmp/icnet_1.0_953_resnet_v1_stage_1_TRAIN/model.ckpt-116511 \
+    --input_checkpoint /tmp/icnet_1.0_1025_resnet_v1_stage_1_COMPRESS/model.ckpt \ # output from export script
     --output_dir /tmp/icnet_1.0_953_resnet_v1_stage_1_COMPRESS \
     --compression_factor 0.5 \  # We will compress to half
     --interactive               # If we want to visualize the kernels being removed
 ```
 
-Now that we have a compressed model, we need to retrain. As with the first stage config, copy and modify the supplied stage 2 configuration file located at:
+Now that we have a compressed model, we can retrain. As with the first stage config, copy and modify the supplied stage 2 configuration file located at:
 
 `configs/two_stage_icnet_1.0_953_resnet_v1_stage_2.config`
 
-It will contain the required hyperparameters for training. You should modify same fields with before, making sure to point to the compressed model for initialization. Notice that in this config, the `filter_scale` field is set to 0.5 instead of 1.0. Then run training and evaluation as before which will produce your final model.
+It will contain the required hyperparameters for training. You should modify same fields as before, making sure to point to the compressed model for initialization. Notice that in this config, the `filter_scale` field is set to **0.5** instead of **1.0**. Then run training and evaluation as before which will produce your final model.

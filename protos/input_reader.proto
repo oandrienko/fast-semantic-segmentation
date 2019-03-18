@@ -7,9 +7,11 @@ message InputReader {
     optional uint32 queue_capacity = 2 [default=2000];
     optional uint32 min_after_dequeue = 3 [default=1000];
     optional uint32 num_epochs = 4 [default=0];
-    optional uint32 num_readers = 5 [default=32];
-    optional TFRecordInputReader tf_record_input_reader = 6;
-    optional uint32 num_examples = 7;
+    optional uint32 num_readers = 5 [default=1];
+    optional uint32 num_parallel_calls = 6 [default=1];
+    optional uint32 shuffle_buffer = 7 [default=2048];
+    optional TFRecordInputReader tf_record_input_reader = 8;
+    optional uint32 num_examples = 9;
 }
 
 message TFRecordInputReader {

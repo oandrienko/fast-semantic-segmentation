@@ -3,7 +3,7 @@
 Perform pixel-wise semantic segmentation on high-resolution images in real-time with Image Cascade Network (ICNet), the highly optimized version of the state-of-the-art Pyramid Scene Parsing Network (PSPNet). **This project implements ICNet and PSPNet50 in Tensorflow with training support for Cityscapes.**
 
 <p align = 'center'>
-*Download pre-trained ICNet and PSPNet50 models <a href="docs/model_zoo.md">here</a>
+<b><i>Download pre-trained ICNet and PSPNet50 models <a href="docs/model_zoo.md">here</a></i></b>
 </i>
 
 

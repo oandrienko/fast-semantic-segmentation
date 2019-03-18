@@ -5,12 +5,21 @@ import "protos/hyperparams.proto";
 import "protos/losses.proto";
 
 message PSPNet {
+
     optional int32 num_classes = 1;
+
     optional PSPNetICNetFeatureExtractor feature_extractor = 2;
+
     optional Hyperparams hyperparams = 3;
+
     optional Loss loss = 4;
+
     // The filter compression factor when applying filter/channel pruning
     optional float filter_scale = 5;
+
+    // The PSP Module pooling factors. This is a list of reduction factors
+    // between (1.0, 0.0].
+    repeated float pooling_factors = 6;
 }
 
 message PSPNetICNetFeatureExtractor {

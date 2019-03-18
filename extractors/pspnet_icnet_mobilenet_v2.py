@@ -1,7 +1,11 @@
-"""MobileNet V2 feature extracter interface implementation."""
-import tensorflow as tf
+r"""MobileNet V2 feature extracter interface implementation."""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
+import tensorflow as tf
 from third_party import mobilenet_v2
+
 from architectures import pspnet_architecture
 
 
@@ -9,8 +13,8 @@ slim = tf.contrib.slim
 
 
 class PSPNetICNetMobilenetV2FeatureExtractor(
-                pspnet_architecture.PSPNetFeatureExtractor):
-    """ICNet feature extractor implementation."""
+        pspnet_architecture.PSPNetFeatureExtractor):
+    """PSPNet/ICNet feature extractor implementation."""
 
     _channel_means = [127.5, 127.5, 127.5]
 
@@ -38,22 +42,22 @@ class PSPNetICNetMobilenetV2FeatureExtractor(
             reuse_weights, weight_decay)
 
     def preprocess(self, raw_inputs):
-        channel_means = self._channel_means # We normalize between [-1, 1]
+        channel_means = self._channel_means  # We normalize between [-1, 1]
         return (raw_inputs - [[channel_means]]) / [[channel_means]]
 
     def _extract_features(self, preprocessed_inputs, scope):
-        half_res_scope = 'layer_5' # expanded_conv_3
-        quarter_res_scope = 'layer_18' # expanded_conv_16
-        psp_aux_scope = 'layer_8' # expanded_conv_6
+        half_res_scope = 'layer_5'  # expanded_conv_3
+        quarter_res_scope = 'layer_18'  # expanded_conv_16
+        psp_aux_scope = 'layer_8'  # expanded_conv_6
 
         conv_defs = mobilenet_v2.make_conv_defs(
-                filter_scale=self._filter_scale,
-                mid_downsample=self._mid_downsample)
+            filter_scale=self._filter_scale,
+            mid_downsample=self._mid_downsample)
         with slim.arg_scope(
             mobilenet_v2.training_scope(
                 is_training=self._is_training,
                 weight_decay=self._weight_decay)):
-            logits, activations = mobilenet_v2.mobilenet_base(
+            _, activations = mobilenet_v2.mobilenet_base(
                 preprocessed_inputs,
                 conv_defs=conv_defs,
                 depth_multiplier=self._depth_multiplier,
@@ -66,6 +70,7 @@ class PSPNetICNetMobilenetV2FeatureExtractor(
             quarter_res_features = activations[quarter_res_scope]
             psp_aux_features = activations[psp_aux_scope]
             return half_res_features, quarter_res_features, psp_aux_features
+
 
 class PSPNetICNetMobilenetFeatureExtractor(
         PSPNetICNetMobilenetV2FeatureExtractor):

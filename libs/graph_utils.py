@@ -1,6 +1,11 @@
 r"""Utils for working with variables and proto defs."""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import re
 import collections
+
 from tensorflow.python.ops.variables import Variable
 from tensorflow.python import pywrap_tensorflow
 from tensorflow.core.framework import node_def_pb2

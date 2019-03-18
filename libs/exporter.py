@@ -4,8 +4,8 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-from builders import dataset_builder
 from builders import preprocessor_builder as preprocessor
+from builders import dataset_builder
 
 
 slim = tf.contrib.slim
@@ -27,6 +27,7 @@ def _map_to_colored_labels(segmentation_map, shape_list, color_map):
     colored_label = tf.reshape(colored_label,
         (shape_list[0], shape_list[1], shape_list[2], output_channels))
     return colored_label
+
 
 def _get_outputs_from_inputs(model, input_tensors):
     # models expect a batch dimension

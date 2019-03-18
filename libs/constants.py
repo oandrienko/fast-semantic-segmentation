@@ -1,5 +1,8 @@
 r"""Cityscapes train IDs to label IDs or label colors."""
 
+# pylint: skip-file
+# flake8: noqa
+
 CITYSCAPES_LABEL_COLORS = [
     (128,  64, 128),        # road
     (244,  35, 231),        # sidewalk

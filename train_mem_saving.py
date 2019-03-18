@@ -14,7 +14,7 @@ For ICNet, the suggested checkpoint nodes are:
     SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu
     SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu
     FastPSPModule/Conv/Relu
-    CascadeFeatureFusion_0/Relu
+    CascadeFeatureFusion/Relu
     CascadeFeatureFusion_1/Relu
 
 For PSPNet 50, the suggested checkpoint nodes are:
@@ -24,8 +24,6 @@ For PSPNet 50, the suggested checkpoint nodes are:
     SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu
     SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu
     PSPModule/Conv/Relu
-
-Tested on NVIDIA 1080 Ti.
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -51,7 +49,7 @@ ICNET_GRADIENT_CHECKPOINTS = [
     'SharedFeatureExtractor/resnet_v1_50/block3/unit_6/bottleneck_v1/Relu',
     'SharedFeatureExtractor/resnet_v1_50/block4/unit_3/bottleneck_v1/Relu',
     'FastPSPModule/Conv/Relu6',
-    'CascadeFeatureFusion_0/Relu',
+    'CascadeFeatureFusion/Relu',
     'CascadeFeatureFusion_1/Relu'
 ]
 

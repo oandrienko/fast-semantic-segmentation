@@ -1,72 +1,74 @@
-import os
+r"""Builder for semantic segmentation dataset."""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import functools
+
 import tensorflow as tf
 
+from libs import standard_fields as fields
 from protos import input_reader_pb2
 
+
 slim = tf.contrib.slim
-
 tfexample_decoder = slim.tfexample_decoder
-
-dataset = slim.dataset
-
-dataset_data_provider = slim.dataset_data_provider
-
-_DATASET_SHUFFLE_SEED = 7
-
-_IMAGE_FIELD            = 'image'
-_IMAGE_NAME_FIELD       = 'image_name'
-_HEIGHT_FIELD           = 'height'
-_WIDTH_FIELD            = 'width'
-_LABEL_FIELD           = 'labels_class'
-
-_ITEMS_TO_DESCRIPTIONS = {
-    'image':        ('A color image of varying height and width.'),
-    'labels_class': ('A semantic segmentation label whose size matches image.'
-                     'Its values range from 0 (background) to num_classes.'),
-}
 
 
 def _create_tf_example_decoder():
 
     keys_to_features = {
-        'image/encoded':
-            tf.FixedLenFeature((), tf.string, default_value=''),
-        'image/format':
-            tf.FixedLenFeature((), tf.string, default_value='jpeg'),
-        'image/filename':
-            tf.FixedLenFeature((), tf.string, default_value=''),
-        'image/height':
-            tf.FixedLenFeature((), tf.int64, default_value=0),
-        'image/width':
-            tf.FixedLenFeature((), tf.int64, default_value=0),
-        'image/segmentation/class/encoded':
-            tf.FixedLenFeature((), tf.string, default_value=''),
-        'image/segmentation/class/format':
-            tf.FixedLenFeature((), tf.string, default_value='png'),
+        fields.TFRecordFields.image_encoded:
+            tf.FixedLenFeature((), tf.string, ''),
+        fields.TFRecordFields.image_format:
+            tf.FixedLenFeature((), tf.string, ''),
+        fields.TFRecordFields.image_filename:
+            tf.FixedLenFeature((), tf.string, ''),
+        fields.TFRecordFields.image_height:
+            tf.FixedLenFeature((), tf.int64, 0),
+        fields.TFRecordFields.image_width:
+            tf.FixedLenFeature((), tf.int64, 0),
+        fields.TFRecordFields.segmentation_class_encoded:
+            tf.FixedLenFeature((), tf.string, ''),
+        fields.TFRecordFields.segmentation_class_format:
+            tf.FixedLenFeature((), tf.string, ''),
     }
 
+    # Main GT Input and output tensors for full image segmentation task
     input_image = tfexample_decoder.Image(
-        image_key='image/encoded',
-        format_key='image/format',
-        shape=(1024, 2048, 3), # CITYSCAPES SPECIFIC
+        image_key=fields.TFRecordFields.image_encoded,
+        format_key=fields.TFRecordFields.image_format,
+        # shape=(1024, 2048, 3),  # TODO: Move this, it's CITYSCAPES SPECIFIC
         channels=3)
-    ground_truth_image = tfexample_decoder.Image(
-        image_key='image/segmentation/class/encoded',
-        format_key='image/segmentation/class/format',
-        shape=(1024, 2048, 1), # CITYSCAPES SPECIFIC
+    output_mask = tfexample_decoder.Image(
+        image_key=fields.TFRecordFields.segmentation_class_encoded,
+        format_key=fields.TFRecordFields.segmentation_class_format,
+        # shape=(1024, 2048, 1),  # TODO: Move this, it's CITYSCAPES SPECIFIC
         channels=1)
 
     items_to_handlers = {
-        _IMAGE_FIELD: input_image,
-        _IMAGE_NAME_FIELD: tfexample_decoder.Tensor('image/filename'),
-        _HEIGHT_FIELD: tfexample_decoder.Tensor('image/height'),
-        _WIDTH_FIELD: tfexample_decoder.Tensor('image/width'),
-        _LABEL_FIELD: ground_truth_image,
+        fields.GroundtruthFields.input_image_path:
+            tfexample_decoder.Tensor('image/filename'),
+        fields.GroundtruthFields.input_image_height:
+            tfexample_decoder.Tensor('image/height'),
+        fields.GroundtruthFields.input_image_width:
+            tfexample_decoder.Tensor('image/width'),
+        # Masks
+        fields.GroundtruthFields.input_image: input_image,
+        fields.GroundtruthFields.output_mask: output_mask
     }
 
     return tfexample_decoder.TFExampleDecoder(
         keys_to_features, items_to_handlers)
+
+
+def _process_fn(tf_serialized_example, decoder):
+    serialized_example = tf.reshape(tf_serialized_example, [])
+    # Return Tensordict
+    keys = decoder.list_items()
+    tensors = decoder.decode(serialized_example, items=keys)
+    tensor_dict = dict(zip(keys, tensors))
+    return tensor_dict
 
 
 def build(input_reader_config):
@@ -77,37 +79,28 @@ def build(input_reader_config):
     reader_config = input_reader_config.tf_record_input_reader
     if reader_config is None:
         raise ValueError('input_reader_config must have '
-                             '`tf_record_input_reader`.')
+                         '`tf_record_input_reader`.')
 
-    if not reader_config.input_path or \
-            not os.path.isfile(reader_config.input_path[0]):
+    input_record_patterns = reader_config.input_path
+    input_record_paths = tf.gfile.Glob(input_record_patterns)
+    num_records = len(input_record_paths)
+    if num_records == 0:
         raise ValueError('At least one input path must be specified in '
                          '`input_reader_config`.')
 
+    files_dataset = tf.data.Dataset.from_tensor_slices(input_record_paths)
+    files_dataset = files_dataset.repeat()
+    dataset = files_dataset.apply(tf.contrib.data.parallel_interleave(
+        tf.data.TFRecordDataset, cycle_length=input_reader_config.num_readers))
+    if input_reader_config.shuffle:
+        dataset = dataset.shuffle(input_reader_config.shuffle_buffer)
+
     decoder = _create_tf_example_decoder()
+    dataset = dataset.map(
+        functools.partial(_process_fn, decoder=decoder),
+        num_parallel_calls=input_reader_config.num_parallel_calls)
 
-    train_dataset = dataset.Dataset(
-        data_sources=reader_config.input_path[:],
-        reader=tf.TFRecordReader,
-        decoder=decoder,
-        num_samples=input_reader_config.num_examples,
-        items_to_descriptions=_ITEMS_TO_DESCRIPTIONS)
+    iterator = dataset.make_initializable_iterator()
+    tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, iterator.initializer)
 
-    provider = dataset_data_provider.DatasetDataProvider(
-        train_dataset,
-        num_readers=input_reader_config.num_readers,
-        num_epochs=(input_reader_config.num_epochs
-            if input_reader_config.num_epochs else None),
-        shuffle=input_reader_config.shuffle,
-        seed=_DATASET_SHUFFLE_SEED)
-
-    (image, image_name, height, width, label) = provider.get([_IMAGE_FIELD,
-        _IMAGE_NAME_FIELD, _HEIGHT_FIELD, _WIDTH_FIELD, _LABEL_FIELD])
-
-    return {
-        _IMAGE_FIELD: image,
-        _IMAGE_NAME_FIELD: image_name,
-        _HEIGHT_FIELD: height,
-        _WIDTH_FIELD: width,
-        _LABEL_FIELD: label
-    }
+    return iterator.get_next()

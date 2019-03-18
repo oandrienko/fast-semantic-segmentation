@@ -43,7 +43,8 @@ compression_strategy {
 
         input { name: "Preprocessor/sub" }
 
-        output { name: "Predictions/Conv/BiasAdd" }
+        output { name: "Predictions/Conv/Conv2D" }
+        # skip_node { name: "Predictions/Conv/Conv2D" }        
 
         node_scope: "SharedFeatureExtractor/resnet_v1_50"
 
