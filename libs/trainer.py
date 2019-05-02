@@ -55,13 +55,6 @@ def create_training_model_losses(input_queue, create_model_fn, train_config,
                                  train_dir=None, gradient_checkpoints=None):
 
     _, segmentation_model = create_model_fn()
-
-    # Optional quantization
-    if train_config.quantize_with_delay:
-        tf.logging.info('Adding quantization nodes to training graph...')
-        tf.contrib.quantize.create_training_graph(
-            quant_delay=train_config.quantize_with_delay)
-
     read_data_list = input_queue.dequeue()
 
     def extract_images_and_targets(read_data):
@@ -79,6 +72,12 @@ def create_training_model_losses(input_queue, create_model_fn, train_config,
 
     segmentation_model.provide_groundtruth(labels[0])
     prediction_dict = segmentation_model.predict(images)
+
+    # Optional quantization - this is experimental and might not work.
+    if train_config.quantize_with_delay:
+        tf.logging.info('Adding quantization nodes to training graph...')
+        tf.contrib.quantize.create_training_graph(
+            quant_delay=train_config.quantize_with_delay)
 
     # Add checkpointing nodes to correct collection
     if gradient_checkpoints is not None:
