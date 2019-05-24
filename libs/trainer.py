@@ -305,7 +305,7 @@ def train_segmentation_model(create_model_fn,
 
             if log_memory:
                 mem_use = mem_util.peak_memory(run_metadata)
-                master_device_mem = mem_use.values()[0] / 1e6 # '/gpu:0'
+                master_device_mem = list(mem_use.values())[0] / 1e6 # '/gpu:0'
                 tf.logging.info('Memory used: %.2f MB', (master_device_mem))
 
             if 'should_stop' in train_step_kwargs:
