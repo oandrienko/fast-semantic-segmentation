@@ -22,7 +22,7 @@ This implementation is based off of the original ICNet paper proposed by Hengshu
 ### Release information
 
 #### October 14, 2018
-An ICNet model trained in August, 2018 has been released as a pre-trained model in the Model Zoo. New training setups are being experimented with to increase the accuracy of this model which should be released in the near future.
+An ICNet model trained in August, 2018 has been released as a pre-trained model in the Model Zoo. All the models were trained without coarse labels and are evaluated on the validation set.
 
 #### September 22, 2018
 The baseline PSPNet50 pre-trained model files have been released publically in the Model Zoo. The accuracy of the model surpases that referenced in the ICNet paper.
@@ -74,9 +74,21 @@ Informtion on training or using the baseline PSPNet50 model can be found <a href
 ## Maintainers
 * Oles Andrienko, github: [oandrienko](https://github.com/oandrienko)
 
+If you found the project, documentation and the provided pretrained models useful in your work, consider citing it with
+
+```
+@misc{fastsemseg2018,
+  author={Andrienko, Oles},
+  title={Fast Semantic Segmentation},
+  howpublished={\url{https://github.com/oandrienko/fast-semantic-segmentation}},
+  year={2018}
+}
+```
+
+
 ## Related Work
 
-This project and some of the documentation was based on the *Tensorflow Object Detection API*. It was the initial inspiration for this project. The `third_party` directory of this project contains files from *OpenAI's Gradient Checkpointing* project by Tim Salimans and Yaroslav Bulatov. The helper modules found in `third_party/model_deploy.py` are from the Tensorflow Slim project. Finally, I used another open source ICNet implementation which converts the original ICNet weights as a reference implementation. Find all these projects below:
+This project and some of the documentation was based on the *Tensorflow Object Detection API*. It was the initial inspiration for this project. The `third_party` directory of this project contains files from *OpenAI's Gradient Checkpointing* project by Tim Salimans and Yaroslav Bulatov. The helper modules found in `third_party/model_deploy.py` are from the Tensorflow Slim project. Finally, another open source ICNet implementation which converts the original Caffe network weights to Tensorflow was used as a reference. Find all these projects below:
 
 * [Tensorflow Object Detection API](https://github.com/tensorflow/models/tree/master/research/object_detection)
 * [Saving memory using gradient-checkpointing](https://github.com/openai/gradient-checkpointing)
@@ -85,4 +97,5 @@ This project and some of the documentation was based on the *Tensorflow Object D
 
 ## Thanks
 
-* This project could not have happened without the advice (and GPU access) given by Professor Steven Waslander and Ali Harakeh from the Waterloo Autonomous Vehicles Lab.
+* This project could not have happened without the advice (and GPU access) given by **Professor Steven Waslander** and **Ali Harakeh** from the *Waterloo Autonomous Vehicles Lab* (now the *Toronto Robotics and Artificial Intelligence Lab*).
+
